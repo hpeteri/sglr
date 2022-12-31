@@ -15,6 +15,7 @@ INCLUDE_FOLDERS="-I ../src/
                  -I ./dependencies/
                  -I ./dependencies/GLEW/include/
                  -I ./dependencies/platform/src/
+                 -I ./dependencies/cmath/
 "
 
 pushd "$(dirname ${BASH_SOURCE[0]})"

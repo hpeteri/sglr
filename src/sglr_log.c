@@ -16,6 +16,8 @@ int sglr_make_debug_logger(){
   glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS); 
 
   glDebugMessageCallback(sglr_debug_log_callback, NULL);
+  
+  //enable all callbacks
   glDebugMessageControl(GL_DONT_CARE,
                         GL_DONT_CARE,
                         GL_DONT_CARE,
@@ -23,12 +25,12 @@ int sglr_make_debug_logger(){
                         NULL,
                         GL_TRUE);
 
-  
+  sglr_check_error();
   return 1;  
 }
 
 void sglr_free_debug_logger(){
-
+  glDisable(GL_DEBUG_OUTPUT);
 }
 
 static void sglr_debug_log_callback(GLenum src, GLenum type, unsigned int id, GLenum severity, 
@@ -72,12 +74,13 @@ static void sglr_debug_log_callback(GLenum src, GLenum type, unsigned int id, GL
 }
 
 
-int sglr_check_gl_error(){
+int sglr_check_error(){
   int err = glGetError();
 
   if(err){
     printf("%s(): '%d' \n", __func__, err);
-  }
-  
+    asm("int3");
+  }  
+
   return err;  
 }
