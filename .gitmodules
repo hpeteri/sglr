@@ -1,0 +1,6 @@
+[submodule "example/dependencies/platform"]
+	path = example/dependencies/platform
+	url = git@github.com:hpeteri/platform
+[submodule "example/dependencies/c_allocator"]
+	path = example/dependencies/c_allocator
+	url = git@github.com:hpeteri/c_allocator
