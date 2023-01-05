@@ -52,10 +52,6 @@ void sglr_copy_buffer(sglr_Buffer src, sglr_Buffer dst, uint32_t src_offset, uin
                            src_offset,
                            dst_offset,
                            size);
-  // this doesn't work
-  // maybe sync issue, but not sure
-  asm ("int3");
-  
   sglr_check_error();
 }
 

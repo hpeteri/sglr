@@ -311,41 +311,25 @@ void sglr_immediate_text(sglr_CommandBuffer2* scb,
     uint32_t codepoint = 0;
     { //codepoint
       int len = 0;
-      
-      //decode utf-8
-      
+      // utf-8 to codepoint
       if((character & 0b11110000) == 0b11110000){
-        asm("int3");
-        
         len = 4;
-        //this should be masked
-        codepoint = *(uint32_t*)at;
-
+        codepoint = ((at[0] & 0b11111) << 18) | (at[1] & 0b111111 << 12) | (at[2] & 0b111111 << 6) | (at[3] & 0b111111);
       }else if((character & 0b11100000) == 0b11100000){
-
-        asm("int3");
         len = 3;
-        //this should be masked
-        codepoint = ((at[2] << 16) & (at[1] << 8) & at[0]);
-                     
+        codepoint = ((at[0] & 0b11111) << 12) | (at[1] & 0b111111 << 6) | (at[2] & 0b111111);
       }else if((character & 0b110000000) == 0b110000000){
-
         len = 2;
         codepoint = ((at[0] & 0b11111) << 6) | (at[1] & 0b111111);
-        
       }else if((character & 0b000000000) == 0b000000000){
-
-        //ascii representation
         len = 1;
         codepoint = character;
-
       }else{
         asm("int3");
         //should not be possible if valid encoding
       }
-
+      
       for(int i = 0; i < len; i++){
-        
         if(!*at){
           //overrun
           asm("int3");
@@ -355,11 +339,9 @@ void sglr_immediate_text(sglr_CommandBuffer2* scb,
     }
     
     if(codepoint > 256){
-      printf("%d is greater than 256\n", codepoint);
       codepoint = 0;
     }
-    
-    
+        
     const int row    = codepoint / 16;
     const int column = codepoint % 16;
 
@@ -373,11 +355,7 @@ void sglr_immediate_text(sglr_CommandBuffer2* scb,
     tc_0.y = tc_1.y;
     tc_1.y = tmp;
 
-
-    //tc_0 = bottom,
     tc_0.y -= 2.0 / 256.0f;
-    
-    
     sglr_immediate_quad_min_max(scb,
                                 vec3_make(cursor.x, cursor.y, cursor.z),
                                 tc_0,
@@ -387,7 +365,7 @@ void sglr_immediate_text(sglr_CommandBuffer2* scb,
                                 color);
                                 
     cursor.x += size;
-  }  
+  }
 }
 void sglr_command_buffer2_set_cam(sglr_CommandBuffer2* scb, sglr_Camera camera){
   scb->cam = camera;
@@ -432,19 +410,56 @@ void sglr_command_buffer2_execute(sglr_CommandBuffer2* scb){
     const uint32_t idx_count  = scb->im.idx_count;
     
     if(vert_count){
-      
+
+#if 0
+      // === pos ====
       sglr_Buffer position_buffer = sglr_make_buffer_vertex(sizeof(vec3) * vert_count, scb->im.pos);
       sglr_set_buffer_debug_name(position_buffer, "im_pos");
 
+      // === tc ====
       sglr_Buffer tc_buffer = sglr_make_buffer_vertex(sizeof(vec3) * vert_count, scb->im.tc);
       sglr_set_buffer_debug_name(tc_buffer, "im_tc");
 
+      // === color ====
       sglr_Buffer color_buffer = sglr_make_buffer_vertex(sizeof(uint32_t) * vert_count, scb->im.color);
       sglr_set_buffer_debug_name(color_buffer, "im_color");
       
+      // === idx ====
       sglr_Buffer idx_buffer = sglr_make_buffer_index(sizeof(uint32_t) * idx_count, scb->im.indices);
       sglr_set_buffer_debug_name(tc_buffer, "im_idx");
 
+#else
+      sglr_Buffer transfer_buffer = sglr_make_buffer_transfer(sizeof(vec3) * vert_count, scb->im.pos);
+      
+      // === pos ====
+      sglr_Buffer position_buffer = sglr_make_buffer_vertex(sizeof(vec3) * vert_count, NULL);
+      sglr_set_buffer_debug_name(position_buffer, "im_pos");
+      sglr_copy_buffer(transfer_buffer, position_buffer, 0, 0, sizeof(vec3) * vert_count);
+      
+      // === tc ====
+      sglr_Buffer tc_buffer = sglr_make_buffer_vertex(sizeof(vec3) * vert_count, NULL);
+      sglr_set_buffer_debug_name(tc_buffer, "im_tc");
+      
+      sglr_fill_buffer(transfer_buffer, sizeof(vec3) * vert_count, scb->im.tc);
+      sglr_copy_buffer(transfer_buffer, tc_buffer, 0, 0, sizeof(vec3) * vert_count);
+
+      // === color ===
+      sglr_Buffer color_buffer = sglr_make_buffer_vertex(sizeof(uint32_t) * vert_count, NULL);
+      sglr_set_buffer_debug_name(color_buffer, "im_color");
+      
+      sglr_fill_buffer(transfer_buffer, sizeof(uint32_t) * vert_count, scb->im.color);
+      sglr_copy_buffer(transfer_buffer, color_buffer, 0, 0, sizeof(uint32_t) * vert_count);
+
+      // === idx ===
+      sglr_Buffer idx_buffer = sglr_make_buffer_index(sizeof(uint32_t) * idx_count, NULL);
+      sglr_set_buffer_debug_name(tc_buffer, "im_idx");
+
+      sglr_fill_buffer(transfer_buffer, sizeof(uint32_t) * idx_count, scb->im.indices);
+      sglr_copy_buffer(transfer_buffer, idx_buffer, 0, 0, sizeof(uint32_t) * idx_count);
+      
+      // free transfer
+      sglr_free_buffer(transfer_buffer);
+#endif
       sglr_GraphicsPipeline graphics_pipeline = scb->graphics_pipeline;
       sglr_Shader shader = graphics_pipeline.material.shader;
       
@@ -506,7 +521,8 @@ void sglr_command_buffer2_execute(sglr_CommandBuffer2* scb){
 
       //draw
       glDrawElements(GL_TRIANGLES, idx_count, GL_UNSIGNED_INT, 0);
-
+      sglr_stats_add_triangle_count_indexed(idx_count, GL_TRIANGLES);
+      
       //free
       sglr_free_buffer(position_buffer);
       sglr_free_buffer(tc_buffer);
