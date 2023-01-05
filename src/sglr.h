@@ -1,6 +1,8 @@
 #ifndef SGLR_H
 #define SGLR_H
 
+#include "sglr_gl.h"
+
 #include "sglr_context.h"
 #include "sglr_stats.h"
 #include "sglr_log.h"
@@ -16,4 +18,6 @@
 #include "sglr_graphics_pipeline.h"
 #include "sglr_color.h"
 #include "sglr_bitmap_font.h"
+
+
 #endif

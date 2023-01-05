@@ -28,3 +28,6 @@
   - scissor in command buffer
 
   - batch rendering
+  - memory usage from meminfo. performancecounters seem so confusing, but i quess we could query drawcount from there ?
+
+  - vsync control, need platfrom implementation

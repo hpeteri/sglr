@@ -246,3 +246,124 @@ sglr_BitmapFont sglr_make_bitmap_font_builtin(){
   return font;
 }
 
+vec2 sglr_text_size(const char* text, float scale){
+  vec2 cursor = vec2_zero();
+  vec2 cursor_max = cursor;
+  
+  char* at = (char*)text;
+  float size = 8.0f * scale;
+  
+  while(*at){
+    const char character = *(char*)at;
+
+    if(character == '\n'){
+      cursor_max.y -= size;
+      cursor_max.x = max(cursor_max.x, cursor.x);
+      cursor.x = 0;
+      
+      at++;
+      continue;
+    }
+    
+    uint32_t codepoint = 0;
+    { //codepoint
+      int len = 0;
+      // utf-8 to codepoint
+      if((character & 0b11110000) == 0b11110000){
+        len = 4;
+        codepoint = ((at[0] & 0b11111) << 18) | (at[1] & 0b111111 << 12) | (at[2] & 0b111111 << 6) | (at[3] & 0b111111);
+      }else if((character & 0b11100000) == 0b11100000){
+        len = 3;
+        codepoint = ((at[0] & 0b11111) << 12) | (at[1] & 0b111111 << 6) | (at[2] & 0b111111);
+      }else if((character & 0b110000000) == 0b110000000){
+        len = 2;
+        codepoint = ((at[0] & 0b11111) << 6) | (at[1] & 0b111111);
+      }else if((character & 0b000000000) == 0b000000000){
+        len = 1;
+        codepoint = character;
+      }else{
+        asm("int3");
+        //should not be possible if valid encoding
+      }
+      
+      for(int i = 0; i < len; i++){
+        if(!*at){
+          //overrun
+          asm("int3");
+        }
+        at ++;
+      }
+    }
+    
+    if(codepoint > 256){
+      codepoint = 0;
+    }
+
+    cursor.x += size;
+  }
+  cursor_max.x = max(cursor_max.x, cursor.x);
+  cursor_max.y -= size;
+  
+  return cursor_max;
+}
+
+vec2 sglr_text_size_n(const char* text, size_t len, float scale){
+  vec2 cursor = vec2_zero();
+  vec2 cursor_max = cursor;
+  
+  char* at = (char*)text;
+  float size = 8.0f * scale;
+  
+  while(*at && at < text + len){
+    const char character = *(char*)at;
+
+    if(character == '\n'){
+      cursor_max.y -= size;
+      cursor_max.x = max(cursor_max.x, cursor.x);
+      cursor.x = 0;
+      
+      at++;
+      continue;
+    }
+    
+    uint32_t codepoint = 0;
+    { //codepoint
+      int len = 0;
+      // utf-8 to codepoint
+      if((character & 0b11110000) == 0b11110000){
+        len = 4;
+        codepoint = ((at[0] & 0b11111) << 18) | (at[1] & 0b111111 << 12) | (at[2] & 0b111111 << 6) | (at[3] & 0b111111);
+      }else if((character & 0b11100000) == 0b11100000){
+        len = 3;
+        codepoint = ((at[0] & 0b11111) << 12) | (at[1] & 0b111111 << 6) | (at[2] & 0b111111);
+      }else if((character & 0b110000000) == 0b110000000){
+        len = 2;
+        codepoint = ((at[0] & 0b11111) << 6) | (at[1] & 0b111111);
+      }else if((character & 0b000000000) == 0b000000000){
+        len = 1;
+        codepoint = character;
+      }else{
+        asm("int3");
+        //should not be possible if valid encoding
+      }
+      
+      for(int i = 0; i < len; i++){
+        if(!*at){
+          //overrun
+          asm("int3");
+        }
+        at ++;
+      }
+    }
+    
+    if(codepoint > 256){
+      codepoint = 0;
+    }
+
+    cursor.x += size;
+  }
+  cursor_max.x = max(cursor_max.x, cursor.x);
+  cursor_max.y -= size;
+  
+  return cursor_max;
+}

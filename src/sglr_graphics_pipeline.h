@@ -42,7 +42,7 @@ typedef struct sglr_GraphicsPipeline{
   
 } sglr_GraphicsPipeline;
 
-sglr_GraphicsPipeline slgr_make_graphics_pipeline_default(sglr_Material material, GLenum topology);
+sglr_GraphicsPipeline sglr_make_graphics_pipeline_default(sglr_Material material, GLenum topology);
 sglr_GraphicsPipeline sglr_make_graphics_pipeline(sglr_Material material, GLenum topology, sglr_RendererState renderer_state, sglr_BlendOps blend, sglr_DepthOps depth, GLenum cull);
 
 void sglr_set_graphics_pipeline(sglr_GraphicsPipeline pipeline);

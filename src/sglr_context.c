@@ -1,10 +1,11 @@
+#include "sglr_gl.h"
+
 #include "sglr_context.h"
 #include "sglr_command_buffer.h"
 
 #include "sglr_log.h" //debug_logger
 
 static sglr_Context* sglr_context_;
-
 
 sglr_Context* sglr_make_context(n1_Allocator allocator){
   sglr_Context* context = (sglr_Context*)allocator.alloc(sizeof(sglr_Context));
@@ -33,7 +34,9 @@ void sglr_free_context(sglr_Context* context){
 
 void sglr_set_context(sglr_Context* context){
   sglr_context_ = context;
-  glBindVertexArray(context->vao);
+  if(context){
+    glBindVertexArray(context->vao);
+  }
 }
 
 sglr_Context* sglr_current_context(){
@@ -55,9 +58,6 @@ void sglr_flush(){
     sglr_free_command_buffer(cb);
     cb = next;
   }
-
-  glFinish();
-  glFlush();
   
   context->command_buffers = NULL;
 }

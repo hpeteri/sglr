@@ -8,5 +8,6 @@ typedef struct sglr_BitmapFont{
 } sglr_BitmapFont;
 
 sglr_BitmapFont sglr_make_bitmap_font_builtin();
-
+vec2 sglr_text_size(const char* text, float scale);
+vec2 sglr_text_size_n(const char* text, size_t len, float scale);
 #endif

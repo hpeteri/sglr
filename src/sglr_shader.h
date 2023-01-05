@@ -1,6 +1,7 @@
 #ifndef SGLR_SHADER_H
 #define SGLR_SHADER_H
 
+#include "cmath/n1_cmath.h"
 
 typedef struct sglr_Shader{
   GLuint id;
@@ -11,13 +12,18 @@ typedef struct sglr_Shader{
   int pos_loc;
   int tc_loc;
   int color_loc;
+  int norm_loc;
+  
   int model_loc;
   
 } sglr_Shader;
 
 sglr_Shader sglr_make_shader(const char* vertex, const char* fragment);
+
 sglr_Shader sglr_make_shader_builtin_simple();
 sglr_Shader sglr_make_shader_builtin_text();
+sglr_Shader sglr_make_shader_builtin_pbr();
+sglr_Shader sglr_make_shader_builtin_depth_only();
 
 void        sglr_free_shader(sglr_Shader shader);
 void        sglr_set_shader(sglr_Shader shader);

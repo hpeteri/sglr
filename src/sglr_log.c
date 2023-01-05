@@ -1,3 +1,6 @@
+#include <stdio.h>
+
+#include "sglr_gl.h"
 #include "sglr_log.h"
 
 static void  sglr_debug_log_callback(GLenum src, GLenum type, unsigned int id, GLenum severity, 

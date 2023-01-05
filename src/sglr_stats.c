@@ -28,6 +28,23 @@ const char* sglr_glsl_version(){
   }
   return glsl_version;
 }
+
+int32_t sglr_vram_total(){
+  GLint total = 0;
+  glGetIntegerv(GL_GPU_MEMORY_INFO_DEDICATED_VIDMEM_NVX, &total);
+  sglr_check_error();
+  
+  return total;
+}
+
+int32_t sglr_vram_avail(){
+  GLint avail = 0;
+  glGetIntegerv(GL_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX, &avail);
+  sglr_check_error();
+
+  return avail;
+}
+
 void sglr_begin_query_time_elapsed_ns(){
   sglr_Context* context = sglr_current_context();
   

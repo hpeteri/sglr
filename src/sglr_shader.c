@@ -83,6 +83,7 @@ sglr_Shader sglr_make_shader(const char* vertex,
   shader.pos_loc   = glGetAttribLocation(shader.id, "vert_pos");
   shader.tc_loc    = glGetAttribLocation(shader.id, "vert_tc");
   shader.color_loc = glGetAttribLocation(shader.id, "vert_color");
+  shader.norm_loc    = glGetAttribLocation(shader.id, "vert_norm");
   sglr_check_error();
   
   shader.model_loc   = glGetAttribLocation(shader.id, "model");
@@ -121,9 +122,8 @@ void sglr_unset_shader(){
 sglr_Shader sglr_make_shader_builtin_simple(){
   static sglr_Shader simple_shader;
   if(!simple_shader.id){
-    return simple_shader,
-      simple_shader = sglr_make_shader(simple_vert0_,
-                                       simple_frag0_);
+    simple_shader = sglr_make_shader(simple_vert0_,
+                                     simple_frag0_);
   }
   return simple_shader;
 }
@@ -131,11 +131,29 @@ sglr_Shader sglr_make_shader_builtin_simple(){
 sglr_Shader sglr_make_shader_builtin_text(){
   static sglr_Shader text_shader;
   if(!text_shader.id){
-    return text_shader,
-      text_shader = sglr_make_shader(bitmap_font_vert,
-                                     bitmap_font_frag);
+    text_shader = sglr_make_shader(bitmap_font_vert,
+                                   bitmap_font_frag);
   }
   return text_shader;
+
+}
+sglr_Shader sglr_make_shader_builtin_pbr(){
+  static sglr_Shader pbr_shader;
+  if(!pbr_shader.id){
+    pbr_shader = sglr_make_shader(pbr_vert,
+                                  pbr_frag);
+  }
+  return pbr_shader;
+
+}
+
+sglr_Shader sglr_make_shader_builtin_depth_only(){
+  static sglr_Shader depth_only_shader;
+  if(!depth_only_shader.id){
+    depth_only_shader = sglr_make_shader(depth_only_vert,
+                                  depth_only_frag);
+  }
+  return depth_only_shader;
 
 }
 

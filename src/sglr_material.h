@@ -4,8 +4,6 @@
 #include "sglr_shader.h"
 typedef struct sglr_Material{
   sglr_Shader shader;
-  
-
   GLuint texture_0;
 } sglr_Material;
 
