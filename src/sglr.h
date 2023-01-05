@@ -2,6 +2,7 @@
 #define SGLR_H
 
 #include "sglr_context.h"
+#include "sglr_stats.h"
 #include "sglr_log.h"
 #include "sglr_render_target.h"
 #include "sglr_shader.h"
