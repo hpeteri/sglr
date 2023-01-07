@@ -242,7 +242,6 @@ void sglr_immediate_mesh(sglr_CommandBuffer2* scb,
   }
 }
 
->>>>>>> dev
 void sglr_immediate_aabb_outline(sglr_CommandBuffer2* scb, vec3 min, vec3 max, uint32_t color, float line_width){
   
   vec3 normal = vec3_make(0, 1, 0);
