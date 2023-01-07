@@ -27,4 +27,11 @@
   - Track context state to minimize state change in the driver
   - scissor in command buffer
 
+<<<<<<< HEAD
   - batch rendering
+=======
+  - batch rendering
+  - memory usage from meminfo. performancecounters seem so confusing, but i quess we could query drawcount from there ?
+
+  - vsync control, need platfrom implementation
+>>>>>>> dev

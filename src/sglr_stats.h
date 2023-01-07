@@ -14,6 +14,8 @@ const char* sglr_gpu_vendor();
 const char* sglr_gl_version();
 const char* sglr_glsl_version();
 
+int32_t sglr_vram_total();
+int32_t sglr_vram_avail();
 
 void    sglr_begin_query_time_elapsed_ns();
 int64_t sglr_end_query_time_elapsed_ns();

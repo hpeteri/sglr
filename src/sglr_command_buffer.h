@@ -53,6 +53,8 @@ struct sglr_CommandBuffer2{
       
       vec3*     pos;
       vec3*     tc;
+      vec3*     norm;
+      
       uint32_t* color;
 
       uint32_t* indices;
@@ -60,6 +62,8 @@ struct sglr_CommandBuffer2{
       struct{
         vec3     pos;
         vec3     tc;
+        vec3     norm;
+        
         uint32_t color;
       } current;
       
@@ -79,6 +83,8 @@ sglr_CommandBuffer2* sglr_make_command_buffer2_im(sglr_GraphicsPipeline graphics
 void sglr_immediate_vertex(sglr_CommandBuffer2* scb, vec3 pos);
 void sglr_immediate_tc(sglr_CommandBuffer2* scb, vec3 tc);
 void sglr_immediate_color(sglr_CommandBuffer2* scb, uint32_t color);
+void sglr_immediate_normal(sglr_CommandBuffer2* scb, vec3 normal);
+
 void sglr_immediate_index(sglr_CommandBuffer2* scb, uint32_t idx);
 
 void sglr_immediate_triangle(sglr_CommandBuffer2* scb,
@@ -89,6 +95,10 @@ void sglr_immediate_triangle(sglr_CommandBuffer2* scb,
 void sglr_immediate_quad_min_max(sglr_CommandBuffer2* scb,
                                  vec3 p0, vec3 tc0, uint32_t color0,
                                  vec3 p1, vec3 tc1, uint32_t color1);
+
+void sglr_immediate_mesh(sglr_CommandBuffer2* scb,
+                         sglr_Mesh mesh,
+                         mat4 model);
 
 void sglr_immediate_aabb_outline(sglr_CommandBuffer2* scb, vec3 min, vec3 max, uint32_t color, float line_width);
                          
@@ -104,7 +114,9 @@ void sglr_immediate_line_3d(sglr_CommandBuffer2* scb,
                             vec3 p1, uint32_t color1,
                             float line_width);
 
-void sglr_immediate_text(sglr_CommandBuffer2* scb,
+
+//returns text size 
+vec2 sglr_immediate_text(sglr_CommandBuffer2* scb,
                          const char* text,
                          vec3 p0,
                          float scale,

@@ -10,6 +10,9 @@ typedef struct sglr_Camera{
   vec3 pos;
   vec3 euler;
   
+
+  quaternion rotation;
+
   float ne;
   float fa;
   
@@ -23,6 +26,7 @@ void sglr_camera_set_perspective(sglr_Camera* camera, mat4 proj);
 void sglr_camera_set_pos(sglr_Camera* camera, vec3 pos);
 void sglr_camera_move(sglr_Camera* camera, vec3 delta);
 void sglr_camera_set_euler(sglr_Camera* camera, vec3 euler);
+void sglr_camera_set_rot(sglr_Camera* camera, quaternion q);
 
 mat4 sglr_camera_matrix(sglr_Camera cam);
 quaternion sglr_camera_rot(sglr_Camera cam);

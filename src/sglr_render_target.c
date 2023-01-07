@@ -1,24 +1,25 @@
 #include "sglr_render_target.h"
-
-sglr_RenderTarget sglr_make_main_render_target(int32_t width, int32_t height, int32_t samples,
+sglr_RenderTarget sglr_make_render_target(int32_t width, int32_t height, int32_t samples,
                                                GLenum color_format,
                                                GLenum depth_format){
-  sglr_Context* context = sglr_current_context();
-  sglr_RenderTarget rt = context->main_render_target;
+  sglr_RenderTarget rt;
+  N1_ZERO_MEMORY(&rt);
+
+  rt.width = width;
+  rt.height = height;
   
   GLuint color_id = 0;
   GLuint depth_id = 0;
   
   // === color ===
-  {
-  
+  if(color_format != GL_NONE){
     glGenTextures(1, &color_id);
     sglr_check_error();
     
     rt.color_attachment.format = color_format;
     rt.color_attachment.id     = color_id;
     rt.samples                 = samples;
-    
+
     if(samples){
       glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, color_id);
       glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, color_format, width, height, GL_TRUE); 
@@ -31,10 +32,10 @@ sglr_RenderTarget sglr_make_main_render_target(int32_t width, int32_t height, in
       glBindTexture(GL_TEXTURE_2D, 0);
       sglr_check_error();
     }
-  }
-  
+  }  
   // === depth ===
-  if(depth_format){
+
+  if(depth_format != GL_NONE){
     glGenTextures(1, &depth_id);
     sglr_check_error();
 
@@ -49,7 +50,7 @@ sglr_RenderTarget sglr_make_main_render_target(int32_t width, int32_t height, in
     
     }else{
       glBindTexture(GL_TEXTURE_2D, depth_id);
-      glTexImage2D(GL_TEXTURE_2D, 0, depth_format, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_BYTE, 0);
+      glTexImage2D(GL_TEXTURE_2D, 0, depth_format, width, height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, 0);
       glBindTexture(GL_TEXTURE_2D, 0);
       sglr_check_error();
     }
@@ -73,14 +74,14 @@ sglr_RenderTarget sglr_make_main_render_target(int32_t width, int32_t height, in
                             0);
   sglr_check_error();
   
-  context->main_render_target = rt;
-  
-  GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-  if(status != GL_FRAMEBUFFER_COMPLETE){
-    sglr_check_error;
-    asm ("int3");
-  }
-  
+  return rt;
+}
+sglr_RenderTarget sglr_make_main_render_target(int32_t width, int32_t height, int32_t samples,
+                                               GLenum color_format,
+                                               GLenum depth_format){
+  sglr_Context* context = sglr_current_context();
+  context->main_render_target = sglr_make_render_target(width, height, samples, color_format, depth_format);
+  sglr_set_render_target_debug_name(sglr_main_render_target(), "main_rt");
   return context->main_render_target;  
 }
 sglr_RenderTarget sglr_main_render_target(){
@@ -152,7 +153,16 @@ void sglr_set_render_target(sglr_RenderTarget target){
   sglr_check_error();
 }
 
-void sglr_set_clear_color_i32_rgba(int32_t rgba){
+void sglr_set_render_target_debug_name(sglr_RenderTarget target, const char* name){
+  glObjectLabel(GL_FRAMEBUFFER,
+                target.id,
+                strlen(name),
+                name);
+  sglr_check_error();
+}
+
+void sglr_set_clear_color_u32_rgba(uint32_t rgba){
+
   const float r = (rgba & 0xff) / 255.0f;
   const float g = ((rgba >> 8) & 0xff) / 255.0f;
   const float b = ((rgba >> 16) & 0xff) / 255.0f;
@@ -166,10 +176,17 @@ void sglr_set_clear_color_4f_rgba(float r, float g, float b, float a){
   glClearColor(r, g, b, a);
   sglr_check_error();
 }
+
+void sglr_set_clear_depth(float value){
+  glClearDepth(value);
+  sglr_check_error();
+}
+
 void sglr_clear_render_target_depth(){
   glClear(GL_DEPTH_BUFFER_BIT);
   sglr_check_error();
 }
+
 void sglr_clear_render_target_color(){
   glClear(GL_COLOR_BUFFER_BIT);
   sglr_check_error();
