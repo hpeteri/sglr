@@ -227,25 +227,30 @@ sglr_BitmapFont sglr_make_bitmap_font_builtin(){
     //printf("================"); 
     //printf("================");  
     //printf("\n");  
-    
   }
   
-  font.texture = sglr_make_texture_2d_red(128, 256, font_pixels);
+  font.texture = sglr_make_texture_2d(128, 256,
+                                      GL_R8,
+                                      GL_RED, GL_UNSIGNED_BYTE, font_pixels);
+  
   sglr_set_texture_debug_name(font.texture, "bitmap_font");
 
   sglr_set_texture(font.texture);
   
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_RED);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_ONE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_ONE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_ONE);
+  sglr_set_texture_swizzle(font.texture, GL_TEXTURE_SWIZZLE_A, GL_RED);
+  sglr_set_texture_swizzle(font.texture, GL_TEXTURE_SWIZZLE_R, GL_ONE);
+  sglr_set_texture_swizzle(font.texture, GL_TEXTURE_SWIZZLE_G, GL_ONE);
+  sglr_set_texture_swizzle(font.texture, GL_TEXTURE_SWIZZLE_B, GL_ONE);
   
   sglr_check_error();
-  sglr_unset_texture(font.texture.type);
+  sglr_unset_texture(font.texture);
 
   return font;
 }
 
+float sglr_text_height(float scale){
+  return 8 * scale;
+}
 vec2 sglr_text_size(const char* text, float scale){
   vec2 cursor = vec2_zero();
   vec2 cursor_max = cursor;

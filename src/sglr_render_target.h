@@ -5,28 +5,45 @@
 
 #include <stdint.h>
 
+typedef enum SGLR_RENDER_TARGET_TYPE{
+
+  SGLR_RENDER_TARGET_TYPE_SINGLE_LAYER = 0,
+  SGLR_RENDER_TARGET_TYPE_MULTI_LAYER,
+
+} SGLR_RENDER_TARGET_TYPE;
 
 typedef struct sglr_RenderTargetAttachment{
-  GLint id;
   
-  GLenum format;  
+  GLint id;
+  GLenum format;
+  
 } sglr_RenderTargetAttachment;
 
 typedef struct sglr_RenderTarget{
+
   int32_t width;
   int32_t height;
+  int32_t depth;
 
   int8_t samples;
 
+  SGLR_RENDER_TARGET_TYPE type;
+  
   sglr_RenderTargetAttachment color_attachment;
   sglr_RenderTargetAttachment depth_attachment;
   
   GLint id;
+
 } sglr_RenderTarget;
 
 sglr_RenderTarget sglr_make_render_target(int32_t width, int32_t height, int32_t samples,
                                           GLenum color_format,
                                           GLenum depth_format);
+
+sglr_RenderTarget sglr_make_render_target_layered(int32_t width, int32_t height, int32_t depth,
+                                                  GLenum color_format,
+                                                  GLenum depth_format);
+                                                  
 
 sglr_RenderTarget sglr_make_main_render_target(int32_t width, int32_t height, int32_t samples,
                                                GLenum color_format,

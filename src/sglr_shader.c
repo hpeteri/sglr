@@ -32,8 +32,10 @@ static int sglr_check_shader_link(const GLuint shader){
   
   return 0;
 }
-
 sglr_Shader sglr_make_shader(const char* vertex,
+                             const char* tesselation_control,
+                             const char* tesselation_eval,
+                             const char* geometry,
                              const char* fragment){
   sglr_Shader shader;
   N1_ZERO_MEMORY(&shader);
@@ -68,13 +70,66 @@ sglr_Shader sglr_make_shader(const char* vertex,
   
   sglr_check_error();
 
+  //geometry
+  if(geometry){
+    shader.geometry_id = glCreateShader(GL_GEOMETRY_SHADER);
+    glShaderSource(shader.geometry_id, 1, &geometry, NULL);
+    glCompileShader(shader.geometry_id);
+    if(!sglr_check_shader_module(shader.geometry_id)){
+      sglr_check_error();
+      return shader;
+    }
+  
+    sglr_check_error();
+  }
+
+  //tesselation_control
+  if(tesselation_control){
+    shader.tesselation_control_id = glCreateShader(GL_TESS_CONTROL_SHADER);
+    glShaderSource(shader.tesselation_control_id, 1, &tesselation_control, NULL);
+    glCompileShader(shader.tesselation_control_id);
+    if(!sglr_check_shader_module(shader.tesselation_control_id)){
+      sglr_check_error();
+      return shader;
+    }
+  
+    sglr_check_error();
+  }
+
+  //tesselation
+  if(tesselation_eval){
+    shader.tesselation_eval_id = glCreateShader(GL_TESS_EVALUATION_SHADER);
+    glShaderSource(shader.tesselation_eval_id, 1, &tesselation_eval, NULL);
+    glCompileShader(shader.tesselation_eval_id);
+    if(!sglr_check_shader_module(shader.tesselation_eval_id)){
+      sglr_check_error();
+      return shader;
+    }
+  
+    sglr_check_error();
+  }
+
+  
   //link
   glAttachShader(shader.id, shader.vertex_id);
   glAttachShader(shader.id, shader.fragment_id);
-  glLinkProgram(shader.id);
+  if(geometry){
+    glAttachShader(shader.id, shader.geometry_id);
+  }
+  if(tesselation_control){
+    glAttachShader(shader.id, shader.tesselation_control_id);
+  }
+  if(tesselation_eval){
+    glAttachShader(shader.id, shader.tesselation_eval_id);
+  }
 
+  glLinkProgram(shader.id);
+  sglr_set_shader(shader);
+  sglr_check_error();
+  
   if(!sglr_check_shader_link(shader.id)){
     sglr_check_error();
+    asm("int3");
     return shader;
   }
 
@@ -103,6 +158,18 @@ void sglr_free_shader(sglr_Shader shader){
     glDeleteShader(shader.fragment_id);
     sglr_check_error();
   }
+  if(shader.geometry_id){
+    glDeleteShader(shader.geometry_id);
+    sglr_check_error();
+  }
+  if(shader.tesselation_control_id){
+    glDeleteShader(shader.tesselation_control_id);
+    sglr_check_error();
+  }
+  if(shader.tesselation_eval_id){
+    glDeleteShader(shader.tesselation_eval_id);
+    sglr_check_error();
+  }
   if(shader.id){
     glDeleteProgram(shader.id);
     sglr_check_error();
@@ -120,64 +187,104 @@ void sglr_unset_shader(){
   sglr_check_error();
 }
 
-sglr_Shader sglr_make_shader_builtin_simple(){
-  static sglr_Shader simple_shader;
-  if(!simple_shader.id){
+sglr_Shader sglr_make_shader_builtin_flat(){
 
-    simple_shader = sglr_make_shader(simple_vert0_,
-                                     simple_frag0_);
+  static sglr_Shader flat_shader;
+  if(!flat_shader.id){
+
+    flat_shader = sglr_make_shader(flat_vert,
+                                   NULL,
+                                   NULL,
+                                   NULL,
+                                   flat_frag);
 
   }
-  return simple_shader;
+  return flat_shader;
 }
 
 sglr_Shader sglr_make_shader_builtin_text(){
+
   static sglr_Shader text_shader;
   if(!text_shader.id){
 
     text_shader = sglr_make_shader(bitmap_font_vert,
+                                   NULL,
+                                   NULL,
+                                   NULL,
                                    bitmap_font_frag);
 
   }
   return text_shader;
-
 }
 
 sglr_Shader sglr_make_shader_builtin_pbr(){
+
   static sglr_Shader pbr_shader;
   if(!pbr_shader.id){
     pbr_shader = sglr_make_shader(pbr_vert,
+                                  NULL,
+                                  NULL,
+                                  NULL,
                                   pbr_frag);
   }
   return pbr_shader;
-
 }
 
 sglr_Shader sglr_make_shader_builtin_depth_only(){
+
   static sglr_Shader depth_only_shader;
   if(!depth_only_shader.id){
     depth_only_shader = sglr_make_shader(depth_only_vert,
-                                  depth_only_frag);
+                                         NULL,
+                                         NULL,
+                                         depth_only_geom,
+                                         depth_only_frag);
   }
   return depth_only_shader;
-
 }
 
+sglr_Shader sglr_make_shader_builtin_z_prepass(){
+
+  static sglr_Shader z_prepass_shader;
+  if(!z_prepass_shader.id){
+  
+    z_prepass_shader = sglr_make_shader(z_prepass_vert,
+                                        NULL,
+                                        NULL,
+                                        NULL,
+                                        z_prepass_frag);
+  }
+  
+  return z_prepass_shader;
+}
 //uniforms
 
-void sglr_set_uniform_mat4(sglr_Shader shader, const char* name, mat4 mat){
-
+void sglr_set_uniform_int(sglr_Shader shader, const char* name, uint32_t i){
   int loc = glGetUniformLocation(shader.id, name);
   sglr_check_error();
 
-  if(loc == -1)
-    *(int*)NULL = 0;
+  if(loc == -1){
+    return;
+  }
+
+  glUniform1i(loc,
+              i);
+  
+  sglr_check_error();
+}
+
+void sglr_set_uniform_mat4(sglr_Shader shader, const char* name, mat4 mat){
+  int loc = glGetUniformLocation(shader.id, name);
+  sglr_check_error();
+
+  if(loc == -1){
+    return;
+  }
   glUniformMatrix4fv(loc,
                      1,
                      0,
                      mat.a_f);
   sglr_check_error();
-  
 }
 
 void sglr_set_shader_debug_name(sglr_Shader shader, const char* name){

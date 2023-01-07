@@ -1,12 +1,16 @@
 #include "sglr_render_target.h"
+
 sglr_RenderTarget sglr_make_render_target(int32_t width, int32_t height, int32_t samples,
                                                GLenum color_format,
                                                GLenum depth_format){
   sglr_RenderTarget rt;
   N1_ZERO_MEMORY(&rt);
 
-  rt.width = width;
-  rt.height = height;
+  rt.type    = SGLR_RENDER_TARGET_TYPE_SINGLE_LAYER;
+  rt.width   = width;
+  rt.height  = height;
+  rt.depth   = 1;
+  rt.samples = samples;
   
   GLuint color_id = 0;
   GLuint depth_id = 0;
@@ -18,7 +22,6 @@ sglr_RenderTarget sglr_make_render_target(int32_t width, int32_t height, int32_t
     
     rt.color_attachment.format = color_format;
     rt.color_attachment.id     = color_id;
-    rt.samples                 = samples;
 
     if(samples){
       glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, color_id);
@@ -29,6 +32,10 @@ sglr_RenderTarget sglr_make_render_target(int32_t width, int32_t height, int32_t
     }else{
       glBindTexture(GL_TEXTURE_2D, color_id);
       glTexImage2D(GL_TEXTURE_2D, 0, color_format, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+      
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
       glBindTexture(GL_TEXTURE_2D, 0);
       sglr_check_error();
     }
@@ -51,9 +58,87 @@ sglr_RenderTarget sglr_make_render_target(int32_t width, int32_t height, int32_t
     }else{
       glBindTexture(GL_TEXTURE_2D, depth_id);
       glTexImage2D(GL_TEXTURE_2D, 0, depth_format, width, height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, 0);
+
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
       glBindTexture(GL_TEXTURE_2D, 0);
       sglr_check_error();
     }
+  }
+  
+  // === framebuffer attachments ===
+  glGenFramebuffers(1, &rt.id);
+  sglr_check_error();
+  
+  glBindFramebuffer(GL_FRAMEBUFFER, rt.id);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  
+  glNamedFramebufferTexture(rt.id,
+                            GL_COLOR_ATTACHMENT0,
+                            color_id,
+                            0);
+
+  glNamedFramebufferTexture(rt.id,
+                            GL_DEPTH_ATTACHMENT,
+                            depth_id,
+                            0);
+  sglr_check_error();
+  
+  return rt;
+}
+
+sglr_RenderTarget sglr_make_render_target_layered(int32_t width, int32_t height, int32_t depth,
+                                                  GLenum color_format,
+                                                  GLenum depth_format){
+  sglr_RenderTarget rt;
+  N1_ZERO_MEMORY(&rt);
+
+  rt.type   = SGLR_RENDER_TARGET_TYPE_MULTI_LAYER;
+  rt.width  = width;
+  rt.height = height;
+  rt.depth  = depth;
+  rt.samples = 0;
+  
+  GLuint color_id = 0;
+  GLuint depth_id = 0;
+  
+  // === color ===
+  if(color_format != GL_NONE){
+    glGenTextures(1, &color_id);
+    sglr_check_error();
+    
+    rt.color_attachment.format = color_format;
+    rt.color_attachment.id     = color_id;
+    
+    glBindTexture(GL_TEXTURE_2D_ARRAY, color_id);
+    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, color_format, width, height, depth, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+      
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+    sglr_check_error();
+    
+  }  
+  // === depth ===
+
+  if(depth_format != GL_NONE){
+    glGenTextures(1, &depth_id);
+    sglr_check_error();
+
+    rt.depth_attachment.format = depth_format;
+    rt.depth_attachment.id     = depth_id;
+    
+    glBindTexture(GL_TEXTURE_2D_ARRAY, depth_id);
+    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, depth_format, width, height, depth, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, 0);
+
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+    sglr_check_error();
+    
   }
   
   // === framebuffer attachments ===

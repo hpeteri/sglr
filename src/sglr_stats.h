@@ -6,6 +6,7 @@
 struct sglr_Stats{
   GLuint time_query_id;
 
+  int32_t draw_call_count;
   int32_t triangle_count;
 };
 
@@ -25,6 +26,8 @@ void    sglr_stats_reset();
 void    sglr_stats_reset_triangle_count();
 void    sglr_stats_add_triangle_count(int32_t triangles);
 void    sglr_stats_add_triangle_count_indexed(int32_t index_count, GLenum topology);
+void    sglr_stats_add_draw_call_count(int32_t count);
 int32_t sglr_stats_triangle_count();
+int32_t sglr_stats_draw_call_count();
 
 #endif

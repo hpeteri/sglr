@@ -67,24 +67,6 @@ void sglr_command_buffer_execute(sglr_CommandBuffer* command_buffer){
 
 // secondary
 
-// - batch
-sglr_CommandBuffer2* sglr_make_command_buffer2(sglr_GraphicsPipeline graphics_pipeline, sglr_Mesh mesh){
-  sglr_Context* context = sglr_current_context();
-  n1_Allocator allocator = context->allocator;
-
-  sglr_CommandBuffer2* cb = (sglr_CommandBuffer2*)allocator.alloc(sizeof(sglr_CommandBuffer2));
-  N1_ZERO_MEMORY(cb);
-
-  cb->type     = COMMAND_BUFFER_2_TYPE_BATCH;
-  cb->graphics_pipeline = graphics_pipeline;
-  cb->mesh     = mesh;
-  cb->cam      = sglr_make_camera();
-
-  return cb;
-}
-
-void sglr_command_buffer2_draw_mesh(mat4 trs);
-
 // - immediate mode
 sglr_CommandBuffer2* sglr_make_command_buffer2_im(sglr_GraphicsPipeline graphics_pipeline){
   sglr_Context* context = sglr_current_context();
@@ -93,7 +75,7 @@ sglr_CommandBuffer2* sglr_make_command_buffer2_im(sglr_GraphicsPipeline graphics
   sglr_CommandBuffer2* cb = (sglr_CommandBuffer2*)allocator.alloc(sizeof(sglr_CommandBuffer2));
   N1_ZERO_MEMORY(cb);
 
-  cb->type              = COMMAND_BUFFER_2_TYPE_IM;
+  cb->type              = SGLR_COMMAND_BUFFER_2_TYPE_IM;
   cb->graphics_pipeline = graphics_pipeline;
   cb->im.vert_max_count = 256;
   cb->im.pos            = (vec3*)allocator.alloc(sizeof(vec3) * cb->im.vert_max_count);
@@ -262,6 +244,36 @@ void sglr_immediate_aabb_outline(sglr_CommandBuffer2* scb, vec3 min, vec3 max, u
   sglr_immediate_line_3d(scb, normal, vec3_make(min.x, min.y, max.z), color, vec3_make(min.x, max.y, max.z), color, line_width);
   sglr_immediate_line_3d(scb, normal, vec3_make(max.x, min.y, max.z), color, vec3_make(max.x, max.y, max.z), color, line_width);
 }
+void sglr_immediate_cube_outline(sglr_CommandBuffer2* scb,
+                                 vec3 p0,
+                                 vec3 p1,
+                                 vec3 p2,
+                                 vec3 p3,
+                                 vec3 p4,
+                                 vec3 p5,
+                                 vec3 p6,
+                                 vec3 p7,
+                                 uint32_t color,
+                                 float line_width){
+
+  vec3 normal = vec3_make(0, 1, 0);
+  sglr_immediate_line_3d(scb, normal, p0, color, p1, color, line_width);
+  sglr_immediate_line_3d(scb, normal, p1, color, p2, color, line_width);
+  sglr_immediate_line_3d(scb, normal, p2, color, p3, color, line_width);
+  sglr_immediate_line_3d(scb, normal, p3, color, p0, color, line_width);
+  
+  sglr_immediate_line_3d(scb, normal, p4, color, p5, color, line_width);
+  sglr_immediate_line_3d(scb, normal, p5, color, p6, color, line_width);
+  sglr_immediate_line_3d(scb, normal, p6, color, p7, color, line_width);
+  sglr_immediate_line_3d(scb, normal, p7, color, p4, color, line_width);
+ 
+  normal = vec3_make(1, 0, 0);
+  sglr_immediate_line_3d(scb, normal, p0, color, p4, color, line_width);
+  sglr_immediate_line_3d(scb, normal, p1, color, p5, color, line_width);
+  sglr_immediate_line_3d(scb, normal, p2, color, p6, color, line_width);
+  sglr_immediate_line_3d(scb, normal, p3, color, p7, color, line_width);
+}
+                                       
 void sglr_immediate_line_2d(sglr_CommandBuffer2* scb,
                             vec3 normal,
                             vec3 p0, uint32_t color0,
@@ -271,7 +283,7 @@ void sglr_immediate_line_2d(sglr_CommandBuffer2* scb,
   const vec3 dir = vec3_subv(p0, p1);
   normal = vec3_normalize(vec3_cross(dir, normal));
   normal = vec3_mulv(normal,
-                     vec3_make1(width));
+                     vec3_make1(width * 0.5f));
   
   vec3 p0_l = vec3_addv(p0, normal);
   vec3 p0_r = vec3_subv(p0, normal);
@@ -418,15 +430,51 @@ vec2 sglr_immediate_text(sglr_CommandBuffer2* scb,
   return cursor_max;
 
 }
-void sglr_command_buffer2_set_cam(sglr_CommandBuffer2* scb, sglr_Camera camera){
-  scb->cam = camera;
+
+void sglr_command_buffer2_add_cam(sglr_CommandBuffer2* scb, sglr_Camera camera){
+  if(scb->cam_count < 256){
+    
+    scb->render_layers[scb->cam_count] = 0;
+    scb->cams[scb->cam_count++]        = camera;
+
+  }
+
+  if(scb->cam_info.cam_count < 256){
+    const uint32_t count = scb->cam_info.cam_count;
+    
+    scb->cam_info.render_layers[count]   = 0;
+    scb->cam_info.cam_projections[count] = sglr_camera_matrix(camera);
+    
+    scb->cam_info.cam_count ++;
+  }
+  
+}
+void sglr_command_buffer2_add_cam_to_layer(sglr_CommandBuffer2* scb, sglr_Camera camera, int render_layer_idx){
+  
+  scb->flags |= SGLR_COMMAND_BUFFER_2_MULTI_LAYER_BIT;
+
+  if(scb->cam_count < 256){
+
+    scb->render_layers[scb->cam_count] = render_layer_idx;
+    scb->cams[scb->cam_count++]        = camera;
+    
+  }
+
+  if(scb->cam_info.cam_count < 256){
+    const uint32_t count = scb->cam_info.cam_count;
+    
+    scb->cam_info.render_layers[count]   = render_layer_idx;
+    scb->cam_info.cam_projections[count] = sglr_camera_matrix(camera);
+    
+    scb->cam_info.cam_count ++;
+  }
 }
 
 void sglr_free_command_buffer2(sglr_CommandBuffer2* scb){
   sglr_Context* context = sglr_current_context();
   n1_Allocator allocator = context->allocator;
 
-  if(scb->type == COMMAND_BUFFER_2_TYPE_IM){
+  if(scb->type == SGLR_COMMAND_BUFFER_2_TYPE_IM){
     allocator.free(scb->im.pos);
     allocator.free(scb->im.tc);
     allocator.free(scb->im.color);
@@ -458,7 +506,8 @@ void sglr_command_buffer2_submit(sglr_CommandBuffer2* scb, sglr_CommandBuffer* c
 }
 
 void sglr_command_buffer2_execute(sglr_CommandBuffer2* scb){
-  if(scb->type == COMMAND_BUFFER_2_TYPE_IM){
+
+  if(scb->type == SGLR_COMMAND_BUFFER_2_TYPE_IM){
     const uint32_t vert_count = scb->im.vert_count;
     const uint32_t idx_count  = scb->im.idx_count;
     
@@ -498,8 +547,6 @@ void sglr_command_buffer2_execute(sglr_CommandBuffer2* scb){
       }
       sglr_set_graphics_pipeline(graphics_pipeline);
       
-      //set camera
-      sglr_set_uniform_mat4(shader, "cam_proj", sglr_camera_matrix(scb->cam));
       
 
       if(shader.pos_loc != -1){
@@ -555,9 +602,41 @@ void sglr_command_buffer2_execute(sglr_CommandBuffer2* scb){
       //...
 
       //draw
-      glDrawElements(scb->graphics_pipeline.topology, idx_count, GL_UNSIGNED_INT, 0);
-      sglr_stats_add_triangle_count_indexed(idx_count, GL_TRIANGLES);
-      
+      //set camera
+      if(scb->flags & SGLR_COMMAND_BUFFER_2_MULTI_LAYER_BIT){
+
+          
+        GLuint cam_info_loc = glGetUniformBlockIndex(shader.id, "cam_info");
+        if(cam_info_loc != GL_INVALID_INDEX){
+
+          sglr_Buffer cam_info = sglr_make_buffer_uniform(sizeof(scb->cam_info),
+                                                          &scb->cam_info);
+
+          sglr_set_buffer_debug_name(cam_info, "cam_info");
+            
+          //@todo, check that buffers on cpu and gpu are the same size
+          glBindBufferBase(GL_UNIFORM_BUFFER, cam_info_loc, cam_info.id);
+          sglr_check_error();
+
+          
+          glDrawElements(scb->graphics_pipeline.topology, idx_count, GL_UNSIGNED_INT, 0);
+          sglr_stats_add_triangle_count_indexed(idx_count, GL_TRIANGLES);
+          sglr_stats_add_draw_call_count(1);
+          
+          sglr_free_buffer(cam_info);
+
+          
+        }else{
+          asm("int3");
+        }
+      }else{
+        sglr_set_uniform_mat4(shader, "cam_proj", sglr_camera_matrix(scb->cams[0]));
+                
+        glDrawElements(scb->graphics_pipeline.topology, idx_count, GL_UNSIGNED_INT, 0);
+        sglr_stats_add_triangle_count_indexed(idx_count, GL_TRIANGLES);
+        sglr_stats_add_draw_call_count(1);
+        
+      }
       //free
       sglr_free_buffer(position_buffer);
       sglr_free_buffer(tc_buffer);
@@ -568,6 +647,6 @@ void sglr_command_buffer2_execute(sglr_CommandBuffer2* scb){
     }
   }else{
     //assert
-    *(int*)NULL = 0;
+    asm("int3");
   }
 }

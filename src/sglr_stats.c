@@ -78,17 +78,12 @@ void sglr_stats_reset(){
   sglr_Context* context = sglr_current_context();
   if(context){
     context->stats = context->current_stats;
-    
-    sglr_stats_reset_triangle_count();
+        
+    context->current_stats.triangle_count = 0;
+    context->current_stats.draw_call_count = 0;
   }  
 }
 
-void sglr_stats_reset_triangle_count(){
-  sglr_Context* context = sglr_current_context();
-  if(context){
-    context->current_stats.triangle_count = 0;
-  }
-}
 void sglr_stats_add_triangle_count(int32_t triangles){
   sglr_Context* context = sglr_current_context();
   if(context){
@@ -108,5 +103,19 @@ int32_t sglr_stats_triangle_count(){
   sglr_Context* context = sglr_current_context();
   if(context){
     return context->stats.triangle_count;
+  }
+}
+
+void sglr_stats_add_draw_call_count(int32_t count){
+  sglr_Context* context = sglr_current_context();
+  if(context){
+    context->current_stats.draw_call_count += count;
+  }
+}
+
+int32_t sglr_stats_draw_call_count(){
+  sglr_Context* context = sglr_current_context();
+  if(context){
+    return context->stats.draw_call_count;
   }
 }

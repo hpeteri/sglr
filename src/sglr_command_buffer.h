@@ -13,6 +13,7 @@ typedef struct sglr_CommandBuffer2 sglr_CommandBuffer2;
 // primary
 typedef struct sglr_CommandBuffer{
   sglr_State        state;
+
   sglr_RenderTarget render_target;
 
   sglr_CommandBuffer2* cb2s; //linked list of secondary buffers
@@ -30,18 +31,39 @@ void sglr_command_buffer_execute(sglr_CommandBuffer* command_buffer);
 
 // secondary
 
-typedef enum sqlr_COMMAND_BUFFER_2_TYPE{
-  COMMAND_BUFFER_2_TYPE_INVALID = 0,
-  COMMAND_BUFFER_2_TYPE_IM,
-  COMMAND_BUFFER_2_TYPE_BATCH,  
-} sqlr_COMMAND_BUFFER_2_TYPE;
+typedef enum SGLR_COMMAND_BUFFER_2_TYPE{
+  SGLR_COMMAND_BUFFER_2_TYPE_INVALID = 0,
+  SGLR_COMMAND_BUFFER_2_TYPE_IM,
+} SGLR_COMMAND_BUFFER_2_TYPE;
+
+enum SGLR_COMMAND_BUFFER_2_FLAG_BITS{
+  SGLR_COMMAND_BUFFER_2_MULTI_LAYER_BIT = 0x1,
+};
+typedef uint8_t SGLR_COMMAND_BUFFER_2_FLAGS;
 
 struct sglr_CommandBuffer2{
-  sqlr_COMMAND_BUFFER_2_TYPE type;
-  sglr_Mesh mesh;
+
+  SGLR_COMMAND_BUFFER_2_TYPE type;
+  SGLR_COMMAND_BUFFER_2_FLAGS flags;
+  
+  sglr_Mesh             mesh;
   sglr_GraphicsPipeline graphics_pipeline;
 
-  sglr_Camera cam;
+  uint32_t    cam_count;
+  sglr_Camera cams[256];
+  int         render_layers[256];
+
+  struct {
+    
+    uint32_t cam_count;
+    uint32_t pad_0;
+    uint32_t pad_1;
+    uint32_t pad_2;
+    
+    uint32_t render_layers[12];
+    mat4     cam_projections[12];
+
+  } cam_info;
   
   union{
     struct {
@@ -74,10 +96,6 @@ struct sglr_CommandBuffer2{
   sglr_CommandBuffer2* next;
 };
 
-// - batch
-sglr_CommandBuffer2* sglr_make_command_buffer2(sglr_GraphicsPipeline graphics_pipeline, sglr_Mesh mesh);
-void                 sglr_command_buffer2_draw_mesh(mat4 trs);
-
 // - immediate mode
 sglr_CommandBuffer2* sglr_make_command_buffer2_im(sglr_GraphicsPipeline graphics_pipeline);
 void sglr_immediate_vertex(sglr_CommandBuffer2* scb, vec3 pos);
@@ -101,7 +119,18 @@ void sglr_immediate_mesh(sglr_CommandBuffer2* scb,
                          mat4 model);
 
 void sglr_immediate_aabb_outline(sglr_CommandBuffer2* scb, vec3 min, vec3 max, uint32_t color, float line_width);
-                         
+void sglr_immediate_cube_outline(sglr_CommandBuffer2* scb,
+                                 vec3 p0,
+                                 vec3 p1,
+                                 vec3 p2,
+                                 vec3 p3,
+                                 vec3 p4,
+                                 vec3 p5,
+                                 vec3 p6,
+                                 vec3 p7,
+                                 uint32_t color,
+                                 float line_width);
+                                                  
 void sglr_immediate_line_2d(sglr_CommandBuffer2* scb,
                             vec3 normal,
                             vec3 p0, uint32_t color0,
@@ -122,7 +151,9 @@ vec2 sglr_immediate_text(sglr_CommandBuffer2* scb,
                          float scale,
                          uint32_t color);
 
-void sglr_command_buffer2_set_cam(sglr_CommandBuffer2* scb, sglr_Camera cam);
+void sglr_command_buffer2_add_cam(sglr_CommandBuffer2* scb, sglr_Camera cam);
+void sglr_command_buffer2_add_cam_to_layer(sglr_CommandBuffer2* scb, sglr_Camera cam, int render_layer_idx);
+
 void sglr_free_command_buffer2(sglr_CommandBuffer2* scb);
 void sglr_command_buffer2_submit(sglr_CommandBuffer2* scb, sglr_CommandBuffer* command_buffer);
 void sglr_command_buffer2_execute(sglr_CommandBuffer2* scb);

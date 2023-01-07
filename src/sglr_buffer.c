@@ -33,7 +33,7 @@ sglr_Buffer sglr_make_buffer_vertex(uint32_t size, void* data){
 }
 
 sglr_Buffer sglr_make_buffer_uniform(uint32_t size, void* data){
-  return sglr_make_buffer(GL_UNIFORM_BUFFER, size, data, GL_DYNAMIC_DRAW);
+  return sglr_make_buffer(GL_UNIFORM_BUFFER, size, data, GL_STATIC_DRAW);
 }
 
 sglr_Buffer sglr_make_buffer_instance(uint32_t size, void* data){
