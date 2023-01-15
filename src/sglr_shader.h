@@ -29,10 +29,6 @@ sglr_Shader sglr_make_shader(const char* vertex,
 
 sglr_Shader sglr_make_shader_builtin_flat();
 sglr_Shader sglr_make_shader_builtin_text();
-sglr_Shader sglr_make_shader_builtin_pbr();
-sglr_Shader sglr_make_shader_builtin_depth_only();
-sglr_Shader sglr_make_shader_builtin_z_prepass();
-
 
 
 void        sglr_free_shader(sglr_Shader shader);

@@ -82,7 +82,8 @@ int sglr_check_error(){
 
   if(err){
     printf("%s(): '%d' \n", __func__, err);
-    asm("int3");
+    *(int*)NULL = 0;
+
   }  
 
   return err;  

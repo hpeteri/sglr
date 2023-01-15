@@ -2,7 +2,7 @@
 #include "sglr_shader_builtin.c"
 
 
-static int sglr_check_shader_module(const GLuint module){
+static int sglr_check_shader_module(const GLuint module, const char* desc){
   int success = 0;
   glGetShaderiv(module, GL_COMPILE_STATUS, &success);
   
@@ -12,6 +12,7 @@ static int sglr_check_shader_module(const GLuint module){
   char buffer[1024];
   glGetShaderInfoLog(module, 1024, NULL, buffer);
 
+  printf("error in stage: '%s'\n", desc);
   printf("%s\n", buffer);
   printf("\n");
 
@@ -51,7 +52,7 @@ sglr_Shader sglr_make_shader(const char* vertex,
   shader.vertex_id = glCreateShader(GL_VERTEX_SHADER);
   glShaderSource(shader.vertex_id, 1, &vertex, NULL);
   glCompileShader(shader.vertex_id);
-  if(!sglr_check_shader_module(shader.vertex_id)){
+  if(!sglr_check_shader_module(shader.vertex_id, "vertex")){
 
     sglr_check_error();
     return shader;
@@ -63,7 +64,7 @@ sglr_Shader sglr_make_shader(const char* vertex,
   shader.fragment_id = glCreateShader(GL_FRAGMENT_SHADER);
   glShaderSource(shader.fragment_id, 1, &fragment, NULL);
   glCompileShader(shader.fragment_id);
-  if(!sglr_check_shader_module(shader.fragment_id)){
+  if(!sglr_check_shader_module(shader.fragment_id, "fragment")){
     sglr_check_error();
     return shader;
   }
@@ -75,7 +76,7 @@ sglr_Shader sglr_make_shader(const char* vertex,
     shader.geometry_id = glCreateShader(GL_GEOMETRY_SHADER);
     glShaderSource(shader.geometry_id, 1, &geometry, NULL);
     glCompileShader(shader.geometry_id);
-    if(!sglr_check_shader_module(shader.geometry_id)){
+    if(!sglr_check_shader_module(shader.geometry_id, "geometry")){
       sglr_check_error();
       return shader;
     }
@@ -88,7 +89,7 @@ sglr_Shader sglr_make_shader(const char* vertex,
     shader.tesselation_control_id = glCreateShader(GL_TESS_CONTROL_SHADER);
     glShaderSource(shader.tesselation_control_id, 1, &tesselation_control, NULL);
     glCompileShader(shader.tesselation_control_id);
-    if(!sglr_check_shader_module(shader.tesselation_control_id)){
+    if(!sglr_check_shader_module(shader.tesselation_control_id, "tesselation control")){
       sglr_check_error();
       return shader;
     }
@@ -101,7 +102,7 @@ sglr_Shader sglr_make_shader(const char* vertex,
     shader.tesselation_eval_id = glCreateShader(GL_TESS_EVALUATION_SHADER);
     glShaderSource(shader.tesselation_eval_id, 1, &tesselation_eval, NULL);
     glCompileShader(shader.tesselation_eval_id);
-    if(!sglr_check_shader_module(shader.tesselation_eval_id)){
+    if(!sglr_check_shader_module(shader.tesselation_eval_id, "tesselation eval")){
       sglr_check_error();
       return shader;
     }
@@ -129,7 +130,7 @@ sglr_Shader sglr_make_shader(const char* vertex,
   
   if(!sglr_check_shader_link(shader.id)){
     sglr_check_error();
-    asm("int3");
+    *(int*)NULL = 0;
     return shader;
   }
 
@@ -138,7 +139,7 @@ sglr_Shader sglr_make_shader(const char* vertex,
   shader.pos_loc   = glGetAttribLocation(shader.id, "vert_pos");
   shader.tc_loc    = glGetAttribLocation(shader.id, "vert_tc");
   shader.color_loc = glGetAttribLocation(shader.id, "vert_color");
-  shader.norm_loc    = glGetAttribLocation(shader.id, "vert_norm");
+  shader.norm_loc  = glGetAttribLocation(shader.id, "vert_norm");
 
   sglr_check_error();
   
@@ -217,46 +218,6 @@ sglr_Shader sglr_make_shader_builtin_text(){
   return text_shader;
 }
 
-sglr_Shader sglr_make_shader_builtin_pbr(){
-
-  static sglr_Shader pbr_shader;
-  if(!pbr_shader.id){
-    pbr_shader = sglr_make_shader(pbr_vert,
-                                  NULL,
-                                  NULL,
-                                  NULL,
-                                  pbr_frag);
-  }
-  return pbr_shader;
-}
-
-sglr_Shader sglr_make_shader_builtin_depth_only(){
-
-  static sglr_Shader depth_only_shader;
-  if(!depth_only_shader.id){
-    depth_only_shader = sglr_make_shader(depth_only_vert,
-                                         NULL,
-                                         NULL,
-                                         depth_only_geom,
-                                         depth_only_frag);
-  }
-  return depth_only_shader;
-}
-
-sglr_Shader sglr_make_shader_builtin_z_prepass(){
-
-  static sglr_Shader z_prepass_shader;
-  if(!z_prepass_shader.id){
-  
-    z_prepass_shader = sglr_make_shader(z_prepass_vert,
-                                        NULL,
-                                        NULL,
-                                        NULL,
-                                        z_prepass_frag);
-  }
-  
-  return z_prepass_shader;
-}
 //uniforms
 
 void sglr_set_uniform_int(sglr_Shader shader, const char* name, uint32_t i){

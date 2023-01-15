@@ -1,11 +1,11 @@
 #include "sglr_mesh.h"
 
 sglr_Mesh sglr_make_mesh(uint32_t               vertex_count,
-                         const float const*     positions,
-                         const float const*     tc,
-                         const float const*     norm,
+                         const float*     positions,
+                         const float*     tc,
+                         const float*     norm,
                          uint32_t               index_count,
-                         const uint32_t const* indices){
+                         const uint32_t* indices){
   sglr_Mesh mesh;
   N1_ZERO_MEMORY(&mesh);
 

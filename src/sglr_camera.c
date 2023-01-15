@@ -10,76 +10,66 @@ sglr_Camera sglr_make_camera(){
   
   return cam;
 }
-/*
-void sglr_camera_set_ortho(sglr_Camera* camera, mat4 ortho){
-  camera->proj = ortho;
-  camera->is_ortho = 1;
-}
 
-void sglr_camera_set_perspective(sglr_Camera* camera, mat4 proj){
-  camera->proj = proj;
-  camera->is_ortho = 0;
-}
-*/
-void sglr_camera_set_ortho_rh(sglr_Camera* camera, float left, float right, float top, float bottom, float near, float far){
+void sglr_camera_set_ortho_rh(sglr_Camera* camera, float left, float right, float top, float bottom, float ne, float fa){
 
-  const mat4 ortho = mat4_ortho_rh(left, right, top, bottom, near, far);
+  const mat4 ortho = mat4_ortho_rh(left, right, top, bottom, ne, fa);
 
   camera->is_ortho = 1;
   camera->projection = ortho;
-  camera->far = far;
-  camera->near = near;
+  camera->fa = fa;
+  camera->ne = ne;
 
 }
 
-void sglr_camera_set_perspective_rh(sglr_Camera* camera, float fov, float aspect, float near, float far){
+void sglr_camera_set_perspective_rh(sglr_Camera* camera, float fov, float aspect, float ne, float fa){
   
-  const mat4 perspective = mat4_perspective_rh(fov, aspect, near, far);
+  const mat4 perspective = mat4_perspective_rh(fov, aspect, ne, fa);
 
   camera->is_ortho        = 0;
   camera->aspect          = aspect;
   camera->projection      = perspective;
   camera->perspective.fov = fov;
-  camera->far             = far;
-  camera->near            = near;
+  camera->fa             = fa;
+  camera->ne            = ne;
 
   vec3 forward = quat_mulv(camera->rotation, vec3_make(0, 0, -1));
   
-  const float half_vertical   = far * tanf(fov * .5f);
+  const float half_vertical   = fa * tanf(fov * .5f);
   const float half_horizontal = half_vertical * aspect;
-  const vec3  front_mult_far  = vec3_mulv(forward, vec3_make1(far));
+  const vec3  front_mult_fa  = vec3_mulv(forward, vec3_make1(fa));
   
 #if 0
-  frustum.nearFace = { cam.Position + zNear * cam.Front, cam.Front };
-  frustum.farFace = { cam.Position + frontMultFar, -cam.Front };
+  frustum.neFace = { cam.Position + zNe * cam.Front, cam.Front };
+  frustum.faFace = { cam.Position + frontMultFa, -cam.Front };
   frustum.rightFace = { cam.Position,
-    glm::cross(cam.Up,frontMultFar + cam.Right * halfHSide) };
+    glm::cross(cam.Up,frontMultFa + cam.Right * halfHSide) };
   frustum.leftFace = { cam.Position,
-    glm::cross(frontMultFar - cam.Right * halfHSide, cam.Up) };
+    glm::cross(frontMultFa - cam.Right * halfHSide, cam.Up) };
   frustum.topFace = { cam.Position,
-    glm::cross(cam.Right, frontMultFar - cam.Up * halfVSide) };
+    glm::cross(cam.Right, frontMultFa - cam.Up * halfVSide) };
   frustum.bottomFace = { cam.Position,
-    glm::cross(frontMultFar + cam.Up * halfVSide, cam.Right) };
+    glm::cross(frontMultFa + cam.Up * halfVSide, cam.Right) };
 #endif
 }
 
 void sglr_camera_update_frustrum_aabb(sglr_Camera* camera){
   
-  float height = tan(camera->perspective.fov / camera->aspect / 180 * PI / 2) * camera->far;
-  float width = tan(camera->perspective.fov / 180 * PI / 2) * camera->far;
-  // === far ====
-  vec3 f_tl = vec3_addv(camera->pos, quat_mulv(camera->rotation, vec3_make(-width, height, -camera->far)));
-  vec3 f_tr = vec3_addv(camera->pos, quat_mulv(camera->rotation, vec3_make(width, height, -camera->far)));
-  vec3 f_bl = vec3_addv(camera->pos, quat_mulv(camera->rotation, vec3_make(-width, -height, -camera->far)));
-  vec3 f_br = vec3_addv(camera->pos, quat_mulv(camera->rotation, vec3_make(width, -height, -camera->far)));
+  float height = tan(camera->perspective.fov / camera->aspect / 180 * PI / 2) * camera->fa;
+  float width = tan(camera->perspective.fov / 180 * PI / 2) * camera->fa;
+  // === fa ====
+  vec3 f_tl = vec3_addv(camera->pos, quat_mulv(camera->rotation, vec3_make(-width, height, -camera->fa)));
+  vec3 f_tr = vec3_addv(camera->pos, quat_mulv(camera->rotation, vec3_make(width, height, -camera->fa)));
+  vec3 f_bl = vec3_addv(camera->pos, quat_mulv(camera->rotation, vec3_make(-width, -height, -camera->fa)));
+  vec3 f_br = vec3_addv(camera->pos, quat_mulv(camera->rotation, vec3_make(width, -height, -camera->fa)));
 
-  height = tan(camera->perspective.fov / camera->aspect / 180 * PI / 2) * camera->near;
-  width = tan(camera->perspective.fov / 180 * PI / 2) * camera->near;
+  height = tan(camera->perspective.fov / camera->aspect / 180 * PI / 2) * camera->ne;
+  width = tan(camera->perspective.fov / 180 * PI / 2) * camera->ne;
         
-  vec3 n_tl = vec3_addv(camera->pos, quat_mulv(camera->rotation, vec3_make(-width, height, -camera->near)));
-  vec3 n_tr = vec3_addv(camera->pos, quat_mulv(camera->rotation, vec3_make(width, height, -camera->near)));
-  vec3 n_bl = vec3_addv(camera->pos, quat_mulv(camera->rotation, vec3_make(-width, -height, -camera->near)));
-  vec3 n_br = vec3_addv(camera->pos, quat_mulv(camera->rotation, vec3_make(width, -height, -camera->near)));
+  vec3 n_tl = vec3_addv(camera->pos, quat_mulv(camera->rotation, vec3_make(-width, height, -camera->ne)));
+  vec3 n_tr = vec3_addv(camera->pos, quat_mulv(camera->rotation, vec3_make(width, height, -camera->ne)));
+  vec3 n_bl = vec3_addv(camera->pos, quat_mulv(camera->rotation, vec3_make(-width, -height, -camera->ne)));
+  vec3 n_br = vec3_addv(camera->pos, quat_mulv(camera->rotation, vec3_make(width, -height, -camera->ne)));
 
   camera->perspective.aabb.min = n_bl;
   camera->perspective.aabb.min = vec3_minv(camera->perspective.aabb.min, f_br);

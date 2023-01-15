@@ -15,7 +15,7 @@ typedef struct sglr_CommandBuffer{
   sglr_State        state;
 
   sglr_RenderTarget render_target;
-
+  
   sglr_CommandBuffer2* cb2s; //linked list of secondary buffers
   sglr_CommandBuffer* next;
   
@@ -41,10 +41,20 @@ enum SGLR_COMMAND_BUFFER_2_FLAG_BITS{
 };
 typedef uint8_t SGLR_COMMAND_BUFFER_2_FLAGS;
 
+
+
+typedef struct IM_Vertex{
+  vec3     pos;
+  vec3     tc;
+  vec3     norm;
+  uint32_t color;
+} IM_Vertex;
+
 struct sglr_CommandBuffer2{
 
-  SGLR_COMMAND_BUFFER_2_TYPE type;
+  SGLR_COMMAND_BUFFER_2_TYPE  type;
   SGLR_COMMAND_BUFFER_2_FLAGS flags;
+  int                         draw_layer_idx;
   
   sglr_Mesh             mesh;
   sglr_GraphicsPipeline graphics_pipeline;
@@ -73,21 +83,10 @@ struct sglr_CommandBuffer2{
       uint32_t idx_count;
       uint32_t idx_max_count;
       
-      vec3*     pos;
-      vec3*     tc;
-      vec3*     norm;
+      IM_Vertex* vertices;
+      uint32_t*  indices;
       
-      uint32_t* color;
-
-      uint32_t* indices;
-      
-      struct{
-        vec3     pos;
-        vec3     tc;
-        vec3     norm;
-        
-        uint32_t color;
-      } current;
+      IM_Vertex  current;
       
     } im;
   };
@@ -98,6 +97,8 @@ struct sglr_CommandBuffer2{
 
 // - immediate mode
 sglr_CommandBuffer2* sglr_make_command_buffer2_im(sglr_GraphicsPipeline graphics_pipeline);
+
+
 void sglr_immediate_vertex(sglr_CommandBuffer2* scb, vec3 pos);
 void sglr_immediate_tc(sglr_CommandBuffer2* scb, vec3 tc);
 void sglr_immediate_color(sglr_CommandBuffer2* scb, uint32_t color);
@@ -153,6 +154,7 @@ vec2 sglr_immediate_text(sglr_CommandBuffer2* scb,
 
 void sglr_command_buffer2_add_cam(sglr_CommandBuffer2* scb, sglr_Camera cam);
 void sglr_command_buffer2_add_cam_to_layer(sglr_CommandBuffer2* scb, sglr_Camera cam, int render_layer_idx);
+void sglr_command_buffer2_set_draw_layer(sglr_CommandBuffer2* scb, int layer);
 
 void sglr_free_command_buffer2(sglr_CommandBuffer2* scb);
 void sglr_command_buffer2_submit(sglr_CommandBuffer2* scb, sglr_CommandBuffer* command_buffer);

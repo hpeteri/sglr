@@ -19,8 +19,9 @@ typedef struct sglr_Camera{
   vec3 euler;
   quaternion rotation;
 
-  float near;
-  float far;
+  //msvc reserves near and far :)
+  float ne;
+  float fa;
 
   float aspect;
   
@@ -48,7 +49,7 @@ sglr_Camera sglr_make_camera();
 //void sglr_camera_set_perspective(sglr_Camera* camera, mat4 proj);
 void sglr_camera_set_ortho_rh(sglr_Camera* camera, float left, float right, float top, float bottom, float near, float far);
 
-void sglr_camera_set_perspective_rh(sglr_Camera* camera, float fov, float aspect, float near, float far);
+void sglr_camera_set_perspective_rh(sglr_Camera* camera, float fov, float aspect, float ne, float fa);
 
 void sglr_camera_update_frustrum_aabb(sglr_Camera* camera);
 

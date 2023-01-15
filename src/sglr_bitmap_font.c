@@ -287,14 +287,15 @@ vec2 sglr_text_size(const char* text, float scale){
         len = 1;
         codepoint = character;
       }else{
-        asm("int3");
+       
+        *(int*)NULL = 0;
         //should not be possible if valid encoding
       }
       
       for(int i = 0; i < len; i++){
         if(!*at){
           //overrun
-          asm("int3");
+          *(int*)NULL = 0;
         }
         at ++;
       }
@@ -348,14 +349,14 @@ vec2 sglr_text_size_n(const char* text, size_t len, float scale){
         len = 1;
         codepoint = character;
       }else{
-        asm("int3");
+        *(int*)NULL = 0;
         //should not be possible if valid encoding
       }
       
       for(int i = 0; i < len; i++){
         if(!*at){
           //overrun
-          asm("int3");
+          *(int*)NULL = 0;
         }
         at ++;
       }

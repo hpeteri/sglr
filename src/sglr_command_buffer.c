@@ -53,7 +53,8 @@ void sglr_command_buffer_execute(sglr_CommandBuffer* command_buffer){
   sglr_CommandBuffer2* scb = command_buffer->cb2s;
 
   sglr_set_render_target(command_buffer->render_target);
-                         
+  
+  
   while(scb){
 
     sglr_command_buffer2_execute(scb);
@@ -78,10 +79,8 @@ sglr_CommandBuffer2* sglr_make_command_buffer2_im(sglr_GraphicsPipeline graphics
   cb->type              = SGLR_COMMAND_BUFFER_2_TYPE_IM;
   cb->graphics_pipeline = graphics_pipeline;
   cb->im.vert_max_count = 256;
-  cb->im.pos            = (vec3*)allocator.alloc(sizeof(vec3) * cb->im.vert_max_count);
-  cb->im.tc             = (vec3*)allocator.alloc(sizeof(vec3) * cb->im.vert_max_count);
-  cb->im.norm           = (vec3*)allocator.alloc(sizeof(vec3) * cb->im.vert_max_count);
-  cb->im.color          = (uint32_t*)allocator.alloc(sizeof(uint32_t) * cb->im.vert_max_count);
+  cb->im.vertices = allocator.alloc(sizeof(IM_Vertex) * cb->im.vert_max_count);
+
   cb->im.idx_max_count  = 256;
   cb->im.indices        = (uint32_t*)allocator.alloc(sizeof(uint32_t) * cb->im.idx_max_count);
   return cb;
@@ -94,22 +93,11 @@ void sglr_immediate_vertex(sglr_CommandBuffer2* scb, vec3 pos){
   scb->im.current.pos = pos;
 
   if(scb->im.vert_count == scb->im.vert_max_count){
-
     scb->im.vert_max_count *= 2;
-    
-    scb->im.pos = (vec3*)allocator.realloc(scb->im.pos, sizeof(vec3) * scb->im.vert_max_count);
-    scb->im.tc = (vec3*)allocator.realloc(scb->im.tc, sizeof(vec3) * scb->im.vert_max_count);
-    scb->im.norm = (vec3*)allocator.realloc(scb->im.norm, sizeof(vec3) * scb->im.vert_max_count);
-    scb->im.color = (uint32_t*)allocator.realloc(scb->im.color, sizeof(uint32_t) * scb->im.vert_max_count);
-                                   
+    scb->im.vertices = allocator.realloc(scb->im.vertices, sizeof(IM_Vertex) * scb->im.vert_max_count);
   }
 
-  scb->im.pos[scb->im.vert_count]   = scb->im.current.pos;
-  scb->im.tc[scb->im.vert_count]    = scb->im.current.tc;
-  scb->im.norm[scb->im.vert_count]  = scb->im.current.norm;
-  scb->im.color[scb->im.vert_count] = scb->im.current.color;
-
-  scb->im.vert_count++;
+  scb->im.vertices[scb->im.vert_count++] = scb->im.current;
 }
 
 void sglr_immediate_tc(sglr_CommandBuffer2* scb, vec3 tc){
@@ -381,14 +369,14 @@ vec2 sglr_immediate_text(sglr_CommandBuffer2* scb,
         len = 1;
         codepoint = character;
       }else{
-        asm("int3");
+        *(int*)NULL = 0;
         //should not be possible if valid encoding
       }
       
       for(int i = 0; i < len; i++){
         if(!*at){
           //overrun
-          asm("int3");
+          *(int*)NULL = 0;
         }
         at ++;
       }
@@ -470,16 +458,18 @@ void sglr_command_buffer2_add_cam_to_layer(sglr_CommandBuffer2* scb, sglr_Camera
   }
 }
 
+
+void sglr_command_buffer2_set_draw_layer(sglr_CommandBuffer2* scb, int layer){
+  scb->draw_layer_idx = layer;
+}
+
 void sglr_free_command_buffer2(sglr_CommandBuffer2* scb){
   sglr_Context* context = sglr_current_context();
   n1_Allocator allocator = context->allocator;
 
   if(scb->type == SGLR_COMMAND_BUFFER_2_TYPE_IM){
-    allocator.free(scb->im.pos);
-    allocator.free(scb->im.tc);
-    allocator.free(scb->im.color);
-    allocator.free(scb->im.norm);
-
+    
+    allocator.free(scb->im.vertices);
     allocator.free(scb->im.indices);
   }
   
@@ -510,29 +500,15 @@ void sglr_command_buffer2_execute(sglr_CommandBuffer2* scb){
   if(scb->type == SGLR_COMMAND_BUFFER_2_TYPE_IM){
     const uint32_t vert_count = scb->im.vert_count;
     const uint32_t idx_count  = scb->im.idx_count;
+
+    glDrawBuffer(GL_COLOR_ATTACHMENT0 + scb->draw_layer_idx);
     
     if(vert_count){
+      sglr_Buffer vert_buffer = sglr_make_buffer_vertex(sizeof(IM_Vertex) * vert_count, scb->im.vertices);
 
-      // === pos ====
-      sglr_Buffer position_buffer = sglr_make_buffer_vertex(sizeof(vec3) * vert_count, scb->im.pos);
-      sglr_set_buffer_debug_name(position_buffer, "im_pos");
-
-      // === tc ====
-      sglr_Buffer tc_buffer = sglr_make_buffer_vertex(sizeof(vec3) * vert_count, scb->im.tc);
-      sglr_set_buffer_debug_name(tc_buffer, "im_tc");
-
-      // === color ====
-      sglr_Buffer color_buffer = sglr_make_buffer_vertex(sizeof(uint32_t) * vert_count, scb->im.color);
-      sglr_set_buffer_debug_name(color_buffer, "im_color");
-
-      // === normal ====
-      sglr_Buffer norm_buffer = sglr_make_buffer_vertex(sizeof(vec3) * vert_count, scb->im.norm);
-      sglr_set_buffer_debug_name(norm_buffer, "im_norm");
-      
       // === idx ====
       sglr_Buffer idx_buffer = sglr_make_buffer_index(sizeof(uint32_t) * idx_count, scb->im.indices);
-      sglr_set_buffer_debug_name(tc_buffer, "im_idx");
-
+            
       sglr_GraphicsPipeline graphics_pipeline = scb->graphics_pipeline;
       sglr_Shader shader = graphics_pipeline.material.shader;
       
@@ -544,60 +520,57 @@ void sglr_command_buffer2_execute(sglr_CommandBuffer2* scb){
         glVertexAttrib4fv(shader.model_loc + 1, identity.a_v[1].a);
         glVertexAttrib4fv(shader.model_loc + 2, identity.a_v[2].a);
         glVertexAttrib4fv(shader.model_loc + 3, identity.a_v[3].a);
+        sglr_check_error();
       }
+      
       sglr_set_graphics_pipeline(graphics_pipeline);
-      
-      
 
+      sglr_set_buffer(vert_buffer);
       if(shader.pos_loc != -1){
         //bind pos buffer
         glEnableVertexAttribArray(shader.pos_loc);
-        sglr_set_buffer(position_buffer);
         glVertexAttribPointer(shader.pos_loc,
                               3,
                               GL_FLOAT,
                               GL_FALSE,
-                              sizeof(vec3),
-                              (void*)0);
+                              sizeof(IM_Vertex),
+                              (void*)offsetof(IM_Vertex, pos));
         sglr_check_error();
       }
 
       if(shader.tc_loc != -1){
         glEnableVertexAttribArray(shader.tc_loc);
-        sglr_set_buffer(tc_buffer);
         glVertexAttribPointer(shader.tc_loc,
                               3,
                               GL_FLOAT,
                               GL_FALSE,
-                              sizeof(vec3),
-                              (void*)0);
+                              sizeof(IM_Vertex),
+                              (void*)offsetof(IM_Vertex, tc));
         sglr_check_error();
       }
 
       if(shader.color_loc != -1){
         glEnableVertexAttribArray(shader.color_loc);
-        sglr_set_buffer(color_buffer);
         glVertexAttribPointer(shader.color_loc,
                               4,
                               GL_UNSIGNED_BYTE,
                               GL_TRUE,
-                              sizeof(uint32_t),
-                              (void*)0);
+                              sizeof(IM_Vertex),
+                              (void*)offsetof(IM_Vertex, color));
         sglr_check_error();
       }
 
       if(shader.norm_loc != -1){
         glEnableVertexAttribArray(shader.norm_loc);
-        sglr_set_buffer(norm_buffer);
         glVertexAttribPointer(shader.norm_loc,
                               3,
                               GL_FLOAT,
                               GL_FALSE,
-                              sizeof(vec3),
-                              (void*)0);
+                              sizeof(IM_Vertex),
+                              (void*)offsetof(IM_Vertex, norm));
         sglr_check_error();
       }
-
+      
       //set renderer state
       //...
 
@@ -619,7 +592,7 @@ void sglr_command_buffer2_execute(sglr_CommandBuffer2* scb){
           sglr_check_error();
 
           
-          glDrawElements(scb->graphics_pipeline.topology, idx_count, GL_UNSIGNED_INT, 0);
+          glDrawElements(scb->graphics_pipeline.topology, idx_count, GL_UNSIGNED_INT, NULL);
           sglr_stats_add_triangle_count_indexed(idx_count, GL_TRIANGLES);
           sglr_stats_add_draw_call_count(1);
           
@@ -627,7 +600,7 @@ void sglr_command_buffer2_execute(sglr_CommandBuffer2* scb){
 
           
         }else{
-          asm("int3");
+          *(int*)NULL = 0;
         }
       }else{
         sglr_set_uniform_mat4(shader, "cam_proj", sglr_camera_matrix(scb->cams[0]));
@@ -635,18 +608,32 @@ void sglr_command_buffer2_execute(sglr_CommandBuffer2* scb){
         glDrawElements(scb->graphics_pipeline.topology, idx_count, GL_UNSIGNED_INT, 0);
         sglr_stats_add_triangle_count_indexed(idx_count, GL_TRIANGLES);
         sglr_stats_add_draw_call_count(1);
-        
       }
-      //free
-      sglr_free_buffer(position_buffer);
-      sglr_free_buffer(tc_buffer);
+      
+      if(shader.pos_loc != -1){
+        glDisableVertexAttribArray(shader.pos_loc);
+        sglr_check_error();
+      }
+      if(shader.tc_loc != -1){
+        glDisableVertexAttribArray(shader.tc_loc);
+        sglr_check_error();
+      }
+      if(shader.color_loc != -1){
+        glDisableVertexAttribArray(shader.color_loc);
+        sglr_check_error();
+      }
+      if(shader.norm_loc != -1){
+        glDisableVertexAttribArray(shader.norm_loc);
+        sglr_check_error();
+      }
+      
+      sglr_free_buffer(vert_buffer);
       sglr_free_buffer(idx_buffer);
-      sglr_free_buffer(color_buffer);
-      sglr_free_buffer(norm_buffer);
+
       sglr_unset_shader();
     }
   }else{
     //assert
-    asm("int3");
+    *(int*)NULL = 0;
   }
 }

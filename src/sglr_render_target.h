@@ -13,7 +13,8 @@ typedef enum SGLR_RENDER_TARGET_TYPE{
 } SGLR_RENDER_TARGET_TYPE;
 
 typedef struct sglr_RenderTargetAttachment{
-  
+
+  GLenum type;
   GLint id;
   GLenum format;
   
@@ -29,7 +30,9 @@ typedef struct sglr_RenderTarget{
 
   SGLR_RENDER_TARGET_TYPE type;
   
-  sglr_RenderTargetAttachment color_attachment;
+  sglr_RenderTargetAttachment color_attachment_0;
+  sglr_RenderTargetAttachment color_attachment_1; //gbuffer for shadows
+  
   sglr_RenderTargetAttachment depth_attachment;
   
   GLint id;

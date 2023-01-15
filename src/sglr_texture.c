@@ -131,3 +131,13 @@ void sglr_set_texture_debug_name(sglr_Texture texture, const char* name){
                 name);
   sglr_check_error();
 }
+
+
+void sglr_set_texture_debug_name_from_id(GLuint id, const char* name){
+  glObjectLabel(GL_TEXTURE,
+                id,
+                strlen(name),
+                name);
+  sglr_check_error();
+  
+}

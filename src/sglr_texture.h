@@ -35,4 +35,5 @@ void sglr_unset_texture_by_type(GLenum type);
 
 
 void sglr_set_texture_debug_name(sglr_Texture texture, const char* name);
+void sglr_set_texture_debug_name_from_id(GLuint id, const char* name);
 #endif

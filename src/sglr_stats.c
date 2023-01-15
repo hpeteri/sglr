@@ -95,7 +95,7 @@ void sglr_stats_add_triangle_count_indexed(int32_t index_count, GLenum topology)
     sglr_stats_add_triangle_count(index_count / 3);
   }else{
     //@todo, handle topology
-    asm("int3");
+    *(int*)NULL = 0;
   }
 }
 
@@ -104,6 +104,7 @@ int32_t sglr_stats_triangle_count(){
   if(context){
     return context->stats.triangle_count;
   }
+  return 0;
 }
 
 void sglr_stats_add_draw_call_count(int32_t count){
@@ -118,4 +119,5 @@ int32_t sglr_stats_draw_call_count(){
   if(context){
     return context->stats.draw_call_count;
   }
+  return 0;
 }
