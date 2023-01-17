@@ -5,7 +5,8 @@ typedef struct sglr_Texture{
   GLuint id;
 
   GLenum type;
-
+  GLenum format;
+  
   uint32_t width;
   uint32_t height;
   uint32_t depth;
@@ -24,8 +25,6 @@ void sglr_set_texture_wrap(sglr_Texture texture, GLenum mode);
 void sglr_set_texture_swizzle(sglr_Texture texture, GLint component, GLint swizzle);
 void sglr_set_texture_min_filter(sglr_Texture texture, GLenum mode);
 void sglr_set_texture_mag_filter(sglr_Texture texture, GLenum mode);
-
-
 
 void sglr_free_texture(sglr_Texture texture);
 

@@ -37,7 +37,6 @@ sglr_RenderTarget sglr_make_render_target(int32_t width, int32_t height, int32_t
       rt.color_attachment_0.format = color_format;
       rt.color_attachment_0.type   = GL_TEXTURE_2D_MULTISAMPLE;
       
-      
       // attachment 1
       glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, color_id_1);
       glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA16F, width, height, GL_TRUE); 
@@ -89,15 +88,17 @@ sglr_RenderTarget sglr_make_render_target(int32_t width, int32_t height, int32_t
     glGenTextures(1, &depth_id);
     sglr_check_error();
 
-    rt.depth_attachment.format = depth_format;
-    rt.depth_attachment.id     = depth_id;
 
     if(samples){
       glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, depth_id);
       glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, depth_format, width, height, GL_TRUE); 
       glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
       sglr_check_error();
-    
+
+      rt.depth_attachment.format = depth_format;
+      rt.depth_attachment.id     = depth_id;
+      rt.depth_attachment.type   = GL_TEXTURE_2D_MULTISAMPLE;
+      
     }else{
       glBindTexture(GL_TEXTURE_2D, depth_id);
       glTexImage2D(GL_TEXTURE_2D, 0, depth_format, width, height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, 0);
@@ -107,6 +108,10 @@ sglr_RenderTarget sglr_make_render_target(int32_t width, int32_t height, int32_t
 
       glBindTexture(GL_TEXTURE_2D, 0);
       sglr_check_error();
+
+      rt.depth_attachment.format = depth_format;
+      rt.depth_attachment.id     = depth_id;
+      rt.depth_attachment.type   = GL_TEXTURE_2D;
     }
   }
   
@@ -175,6 +180,10 @@ sglr_RenderTarget sglr_make_render_target_layered(int32_t width, int32_t height,
     glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
     sglr_check_error();
     
+    rt.color_attachment_0.format = depth_format;
+    rt.color_attachment_0.id     = color_id_0;
+    rt.color_attachment_0.type   = GL_TEXTURE_2D_ARRAY;
+      
   }  
   // === depth ===
 
@@ -193,7 +202,12 @@ sglr_RenderTarget sglr_make_render_target_layered(int32_t width, int32_t height,
 
     glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
     sglr_check_error();
+
     
+    rt.depth_attachment.format = depth_format;
+    rt.depth_attachment.id     = depth_id;
+    rt.depth_attachment.type   = GL_TEXTURE_2D_ARRAY;
+      
   }
   
   // === framebuffer attachments ===
@@ -275,6 +289,11 @@ void sglr_free_render_target(sglr_RenderTarget target){
     sglr_check_error();
   }
 
+  if(target.color_attachment_1.id){
+    glDeleteTextures(1, &target.color_attachment_1.id);
+    sglr_check_error();
+  }
+
   if(target.depth_attachment.id){
     glDeleteTextures(1, &target.depth_attachment.id);
     sglr_check_error();
@@ -318,11 +337,13 @@ void sglr_set_clear_color_4f_rgba(float r, float g, float b, float a){
 }
 
 void sglr_set_clear_depth(float value){
+  
   glClearDepth(value);
   sglr_check_error();
 }
 
 void sglr_clear_render_target_depth(){
+  glDepthMask(GL_TRUE);
   glClear(GL_DEPTH_BUFFER_BIT);
   
   sglr_check_error();

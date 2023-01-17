@@ -10,5 +10,6 @@
 #include "sglr_texture.c"
 #include "sglr_material.c"
 #include "sglr_graphics_pipeline.c"
+#include "sglr_compute_pipeline.c"
 #include "sglr_color.c"
 #include "sglr_bitmap_font.c"

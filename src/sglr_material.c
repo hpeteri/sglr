@@ -19,52 +19,97 @@ sglr_Material sglr_copy_material(sglr_Material material){
 }
 
 void sglr_set_material(sglr_Material material){
+  sglr_set_material_2(material, 0);
+}
+void sglr_set_material_2(sglr_Material material, int is_compute){
   sglr_set_shader(material.shader);
 
-
-  const char* texture_names[4] = {
-    "texture0",
-    "texture1",
-    "texture2",
-    "texture3",
-  };
-
   for(int i = 0; i < 4; i++){
-    glActiveTexture(GL_TEXTURE0 + i);
-    glBindTexture(material.textures[i].type, material.textures[i].id);
-    glUniform1i(glGetUniformLocation(material.shader.id, texture_names[i]), i);;
-    sglr_check_error();
-  }
+    sglr_MaterialTextureBinding texture_binding = material.textures[i];
 
-  #if 0
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(material.textures[0].type, material.textures[0].id);
-  glUniform1i(glGetUniformLocation(material.shader.id, "texture0"), 0);
-  sglr_check_error();
+    if(texture_binding.is_image){
+      SGLR_ASSERT(material.textures[i].format != GL_NONE);
   
-  glActiveTexture(GL_TEXTURE1);
-  glBindTexture(material.textures[1].type, material.textures[1].id);
-  glUniform1i(glGetUniformLocation(material.shader.id, "texture1"), 1);
-  sglr_check_error();
-  #endif
+      glBindImageTexture(i,
+                         texture_binding.id,
+                         0,
+                         GL_FALSE,
+                         0,
+                         GL_WRITE_ONLY,
+                         material.textures[i].format);
+         
+      sglr_check_error();
+
+
+    }else{
+      glActiveTexture(GL_TEXTURE0 + i);
+      glBindTexture(material.textures[i].type, material.textures[i].id);
+      GLint loc = material.shader.texture_locs[i];
+      if(loc != (int32_t)GL_INVALID_INDEX){
+        glUniform1i(loc, i);
+        sglr_check_error();
+      }
+    }
+  }
   
-  GLuint light_info_loc = glGetUniformBlockIndex(material.shader.id, "LightInfo");
-  if(light_info_loc != GL_INVALID_INDEX){
-    //@todo, check that buffers on cpu and gpu are the same size
-    //glBindBuffer(GL_UNIFORM_BUFFER, material.light_info);
-    glBindBufferBase(GL_UNIFORM_BUFFER, light_info_loc, material.light_info);
+  
+  
+  for(int i = 0; i < 4; i++){
+    GLint loc = material.shader.buffer_locs[i];
     
-    sglr_check_error();
+    if(material.buffers[i].id){
+      
+      glUniformBlockBinding(material.shader.id, 0, i);
+      glBindBufferBase(GL_UNIFORM_BUFFER, i, material.buffers[i].id);
+      sglr_check_error();  
+
+    }
+
+    
   }
-  sglr_check_error();
 
+  sglr_check_error();  
 }
 
-void sglr_set_material_texture_i(sglr_Material* material, int index, GLenum texture_type, GLuint texture_id){
-  material->textures[index].type = texture_type;
-  material->textures[index].id   = texture_id;
+void sglr_set_material_sampler_i(sglr_Material* material, int index, sglr_Texture texture){
+
+  sglr_set_material_sampler_i_2(material, index, texture.type, texture.id);
 }
 
-void sglr_set_material_light_info(sglr_Material* material, GLuint buffer_id){
-  material->light_info = buffer_id;
+void sglr_set_material_sampler_i_2(sglr_Material* material, int index, GLenum texture_type, GLuint texture_id){
+  
+  SGLR_ASSERT(texture_type != GL_NONE);
+
+  // samplers cant be multisample
+  SGLR_ASSERT(texture_type != GL_TEXTURE_2D_MULTISAMPLE);
+
+  material->textures[index].type   = texture_type;
+  material->textures[index].id     = texture_id;
+  material->textures[index].format = GL_NONE; 
+  material->textures[index].is_image = 0;
 }
+
+void sglr_set_material_image_i(sglr_Material* material, int index, sglr_Texture texture){
+  sglr_set_material_image_i_2(material, index, texture.type, texture.format, texture.id);
+}
+
+void sglr_set_material_image_i_2(sglr_Material* material, int index, GLenum texture_type, GLenum texture_format, GLuint texture_id){
+  SGLR_ASSERT(texture_type != GL_NONE);
+
+  //srgba can't be used for imageLoad and store
+  SGLR_ASSERT(texture_format != GL_SRGB_ALPHA);
+
+  // samplers cant be multisample
+  SGLR_ASSERT(texture_type != GL_TEXTURE_2D_MULTISAMPLE);
+
+  material->textures[index].type     = texture_type;
+  material->textures[index].id       = texture_id;
+  material->textures[index].format   = texture_format;
+  material->textures[index].is_image = 1;
+}
+
+void sglr_set_material_buffer_i(sglr_Material* material, int index, sglr_Buffer buffer){
+  material->buffers[index].id = buffer.id;
+}
+
+

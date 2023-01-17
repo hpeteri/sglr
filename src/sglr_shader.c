@@ -1,6 +1,6 @@
 #include "sglr_shader.h"
 #include "sglr_shader_builtin.c"
-
+#include "sglr_assert.h"
 
 static int sglr_check_shader_module(const GLuint module, const char* desc){
   int success = 0;
@@ -33,6 +33,7 @@ static int sglr_check_shader_link(const GLuint shader){
   
   return 0;
 }
+
 sglr_Shader sglr_make_shader(const char* vertex,
                              const char* tesselation_control,
                              const char* tesselation_eval,
@@ -53,8 +54,8 @@ sglr_Shader sglr_make_shader(const char* vertex,
   glShaderSource(shader.vertex_id, 1, &vertex, NULL);
   glCompileShader(shader.vertex_id);
   if(!sglr_check_shader_module(shader.vertex_id, "vertex")){
-
     sglr_check_error();
+    SGLR_ASSERT(0);
     return shader;
   }
   
@@ -66,6 +67,7 @@ sglr_Shader sglr_make_shader(const char* vertex,
   glCompileShader(shader.fragment_id);
   if(!sglr_check_shader_module(shader.fragment_id, "fragment")){
     sglr_check_error();
+    SGLR_ASSERT(0);
     return shader;
   }
   
@@ -78,6 +80,7 @@ sglr_Shader sglr_make_shader(const char* vertex,
     glCompileShader(shader.geometry_id);
     if(!sglr_check_shader_module(shader.geometry_id, "geometry")){
       sglr_check_error();
+      SGLR_ASSERT(0);
       return shader;
     }
   
@@ -91,6 +94,7 @@ sglr_Shader sglr_make_shader(const char* vertex,
     glCompileShader(shader.tesselation_control_id);
     if(!sglr_check_shader_module(shader.tesselation_control_id, "tesselation control")){
       sglr_check_error();
+      SGLR_ASSERT(0);
       return shader;
     }
   
@@ -104,6 +108,7 @@ sglr_Shader sglr_make_shader(const char* vertex,
     glCompileShader(shader.tesselation_eval_id);
     if(!sglr_check_shader_module(shader.tesselation_eval_id, "tesselation eval")){
       sglr_check_error();
+      SGLR_ASSERT(0);
       return shader;
     }
   
@@ -130,7 +135,7 @@ sglr_Shader sglr_make_shader(const char* vertex,
   
   if(!sglr_check_shader_link(shader.id)){
     sglr_check_error();
-    *(int*)NULL = 0;
+    SGLR_ASSERT(0);
     return shader;
   }
 
@@ -145,6 +150,26 @@ sglr_Shader sglr_make_shader(const char* vertex,
   
   shader.model_loc   = glGetAttribLocation(shader.id, "model");
   sglr_check_error();
+  
+  const char* texture_names[4] = {
+    "texture_0",
+    "texture_1",
+    "texture_2",
+    "texture_3",
+  };
+  
+  const char* block_names[4] = {
+    "interface_block_0",
+    "interface_block_1",
+    "interface_block_2",
+    "interface_block_3"
+  };
+  
+  for(int i = 0; i < 4; i++){
+    shader.texture_locs[i] = glGetUniformLocation(shader.id, texture_names[i]);
+    shader.buffer_locs[i]  = glGetUniformBlockIndex(shader.id, block_names[i]);
+    sglr_check_error();
+  }
 
   return shader;
 }
@@ -176,6 +201,74 @@ void sglr_free_shader(sglr_Shader shader){
     sglr_check_error();
   }
   sglr_check_error();
+}
+
+sglr_Shader sglr_make_shader_compute(const char* compute){
+  sglr_Shader shader;
+  N1_ZERO_MEMORY(&shader);
+
+  if(compute == NULL){
+    return shader;
+  }
+
+  shader.id = glCreateProgram();
+  sglr_check_error();
+    
+  shader.compute_id = glCreateShader(GL_COMPUTE_SHADER);
+
+  glShaderSource(shader.compute_id, 1, &compute, NULL);
+  glCompileShader(shader.compute_id);
+  
+  if(!sglr_check_shader_module(shader.compute_id, "compute")){
+    sglr_check_error();
+    SGLR_ASSERT(0);
+    return shader;
+  }
+  
+  sglr_check_error();
+  glAttachShader(shader.id, shader.compute_id);
+  sglr_check_error();
+  
+  glLinkProgram(shader.id);
+  sglr_check_error();
+  
+  sglr_set_shader(shader);
+  
+  if(!sglr_check_shader_link(shader.id)){
+    sglr_check_error();
+    SGLR_ASSERT(0);
+    return shader;
+  }
+
+  //query locations
+  shader.pos_loc   = glGetAttribLocation(shader.id, "vert_pos");
+  shader.tc_loc    = glGetAttribLocation(shader.id, "vert_tc");
+  shader.color_loc = glGetAttribLocation(shader.id, "vert_color");
+  shader.norm_loc  = glGetAttribLocation(shader.id, "vert_norm");
+
+  sglr_check_error();
+  
+  const char* texture_names[4] = {
+    "texture_0",
+    "texture_1",
+    "texture_2",
+    "texture_3",
+  };
+
+  const char* block_names[4] = {
+    "interface_block_0",
+    "interface_block_1",
+    "interface_block_2",
+    "interface_block_3"
+  };
+  
+  for(int i = 0; i < 4; i++){
+    shader.texture_locs[i] = glGetUniformLocation(shader.id, texture_names[i]);
+    shader.buffer_locs[i]  = glGetUniformBlockIndex(shader.id, block_names[i]);
+    sglr_check_error();
+  }
+  
+  return shader;
 }
 
 void sglr_set_shader(sglr_Shader shader){
@@ -233,6 +326,19 @@ void sglr_set_uniform_int(sglr_Shader shader, const char* name, uint32_t i){
   
   sglr_check_error();
 }
+void sglr_set_uniform_float(sglr_Shader shader, const char* name, float value){
+  int loc = glGetUniformLocation(shader.id, name);
+  sglr_check_error();
+
+  if(loc == -1){
+    return;
+  }
+
+  glUniform1f(loc,
+              value);
+  
+  sglr_check_error();
+}
 
 void sglr_set_uniform_mat4(sglr_Shader shader, const char* name, mat4 mat){
   int loc = glGetUniformLocation(shader.id, name);
@@ -248,6 +354,23 @@ void sglr_set_uniform_mat4(sglr_Shader shader, const char* name, mat4 mat){
   sglr_check_error();
 }
 
+void sglr_set_uniform_vec4(sglr_Shader shader, const char* name, float x, float y, float z, float w){
+
+
+  int loc = glGetUniformLocation(shader.id, name);
+  sglr_check_error();
+
+  if(loc == -1){
+    return;
+  }
+  glUniform4f(loc,
+              x, y, z, w);
+  
+  sglr_check_error();
+
+  
+  
+}
 void sglr_set_shader_debug_name(sglr_Shader shader, const char* name){
   glObjectLabel(GL_PROGRAM,
                 shader.id,
