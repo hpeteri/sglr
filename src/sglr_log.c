@@ -2,6 +2,7 @@
 
 #include "sglr_gl.h"
 #include "sglr_log.h"
+#include "sglr_assert.h"
 
 static void  sglr_debug_log_callback(GLenum src, GLenum type, unsigned int id, GLenum severity, 
                                      GLsizei length, const char *message, const void *userParam);
@@ -82,8 +83,7 @@ int sglr_check_error(){
 
   if(err){
     printf("%s(): '%d' \n", __func__, err);
-    *(int*)NULL = 0;
-
+    SGLR_ASSERT(0);
   }  
 
   return err;  

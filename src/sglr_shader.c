@@ -1,6 +1,6 @@
 #include "sglr_shader.h"
 #include "sglr_shader_builtin.c"
-
+#include "sglr_assert.h"
 
 static int sglr_check_shader_module(const GLuint module, const char* desc){
   int success = 0;
@@ -54,8 +54,8 @@ sglr_Shader sglr_make_shader(const char* vertex,
   glShaderSource(shader.vertex_id, 1, &vertex, NULL);
   glCompileShader(shader.vertex_id);
   if(!sglr_check_shader_module(shader.vertex_id, "vertex")){
-
     sglr_check_error();
+    SGLR_ASSERT(0);
     return shader;
   }
   
@@ -67,6 +67,7 @@ sglr_Shader sglr_make_shader(const char* vertex,
   glCompileShader(shader.fragment_id);
   if(!sglr_check_shader_module(shader.fragment_id, "fragment")){
     sglr_check_error();
+    SGLR_ASSERT(0);
     return shader;
   }
   
@@ -79,6 +80,7 @@ sglr_Shader sglr_make_shader(const char* vertex,
     glCompileShader(shader.geometry_id);
     if(!sglr_check_shader_module(shader.geometry_id, "geometry")){
       sglr_check_error();
+      SGLR_ASSERT(0);
       return shader;
     }
   
@@ -92,6 +94,7 @@ sglr_Shader sglr_make_shader(const char* vertex,
     glCompileShader(shader.tesselation_control_id);
     if(!sglr_check_shader_module(shader.tesselation_control_id, "tesselation control")){
       sglr_check_error();
+      SGLR_ASSERT(0);
       return shader;
     }
   
@@ -105,6 +108,7 @@ sglr_Shader sglr_make_shader(const char* vertex,
     glCompileShader(shader.tesselation_eval_id);
     if(!sglr_check_shader_module(shader.tesselation_eval_id, "tesselation eval")){
       sglr_check_error();
+      SGLR_ASSERT(0);
       return shader;
     }
   
@@ -131,7 +135,7 @@ sglr_Shader sglr_make_shader(const char* vertex,
   
   if(!sglr_check_shader_link(shader.id)){
     sglr_check_error();
-    *(int*)NULL = 0;
+    SGLR_ASSERT(0);
     return shader;
   }
 
@@ -217,7 +221,7 @@ sglr_Shader sglr_make_shader_compute(const char* compute){
   
   if(!sglr_check_shader_module(shader.compute_id, "compute")){
     sglr_check_error();
-    *(int*)NULL = 0;
+    SGLR_ASSERT(0);
     return shader;
   }
   
@@ -232,7 +236,7 @@ sglr_Shader sglr_make_shader_compute(const char* compute){
   
   if(!sglr_check_shader_link(shader.id)){
     sglr_check_error();
-    *(int*)NULL = 0;
+    SGLR_ASSERT(0);
     return shader;
   }
 

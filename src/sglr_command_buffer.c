@@ -383,14 +383,14 @@ vec2 sglr_immediate_text(sglr_CommandBuffer2* scb,
         len = 1;
         codepoint = character;
       }else{
-        *(int*)NULL = 0;
+        SGLR_ASSERT(0);
         //should not be possible if valid encoding
       }
       
       for(int i = 0; i < len; i++){
         if(!*at){
-          //overrun
-          *(int*)NULL = 0;
+          
+          SGLR_ASSERT(0);
         }
         at ++;
       }
@@ -510,7 +510,8 @@ void sglr_command_buffer2_submit(sglr_CommandBuffer2* scb, sglr_CommandBuffer* c
 }
 
 static void sglr_command_buffer2_execute_im(sglr_CommandBuffer2* scb){
-    
+  SGLR_ASSERT(scb->type == SGLR_COMMAND_BUFFER_2_TYPE_IM);
+  
   const uint32_t vert_count = scb->im.vert_count;
   const uint32_t idx_count  = scb->im.idx_count;
 
@@ -605,7 +606,6 @@ static void sglr_command_buffer2_execute_im(sglr_CommandBuffer2* scb){
       //@todo, check that buffers on cpu and gpu are the same size
       glBindBufferBase(GL_UNIFORM_BUFFER, cam_info_loc, cam_info.id);
       sglr_check_error();
-
           
       glDrawElements(scb->im.graphics_pipeline.topology, idx_count, GL_UNSIGNED_INT, NULL);
       sglr_stats_add_triangle_count_indexed(idx_count, GL_TRIANGLES);
@@ -615,7 +615,7 @@ static void sglr_command_buffer2_execute_im(sglr_CommandBuffer2* scb){
 
           
     }else{
-      *(int*)NULL = 0;
+      SGLR_ASSERT(0);
     }
   }else{
     sglr_set_uniform_mat4(shader, "cam_proj", sglr_camera_matrix(scb->cams[0]));
@@ -671,15 +671,14 @@ void sglr_command_buffer2_execute(sglr_CommandBuffer2* scb){
 
     sglr_command_buffer2_execute_compute(scb);
   }else{
-    
-    *(int*)NULL = 0;
+    SGLR_ASSERT(0);
   }
 }
 
 void sglr_compute_dispatch(sglr_CommandBuffer2* scb, int32_t width, int32_t height, int32_t depth){
-  if(scb->type !=  SGLR_COMMAND_BUFFER_2_TYPE_COMPUTE){
-    *(int*)NULL = 0;
-  }
+  
+  SGLR_ASSERT(scb->type == SGLR_COMMAND_BUFFER_2_TYPE_COMPUTE);
+  
   if(scb->compute.work_group_count < scb->compute.work_group_max_count){
     sglr_ComputeWorkGroup work_group =
     {

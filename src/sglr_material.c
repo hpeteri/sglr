@@ -37,15 +37,10 @@ void sglr_set_material_2(sglr_Material material, int is_compute){
 
   }else{
     for(int i = 0; i < 4; i++){
-      
       if(material.textures[i].id == 0)
         continue;
-      
-      if(material.textures[i].format == GL_NONE){
-        printf("\n");
-        printf("!!! set_compute_pipeline: texture format is GL_NONE!\n");
-        printf("!!! use sglr_set_material_format_texture_i to specify texture format\n");
-      }
+
+      SGLR_ASSERT(material.textures[i].format != GL_NONE);
   
       glBindImageTexture(i,
                          material.textures[i].id,
@@ -72,22 +67,16 @@ void sglr_set_material_2(sglr_Material material, int is_compute){
 
 void sglr_set_material_sampler_i(sglr_Material* material, int index, sglr_Texture texture){
 
-  if(texture.type == GL_NONE){
-    printf("assertion failed: texture type is GL_NONE!\n");
-    *(int*)NULL = 0;
-  }
-  material->textures[index].type   = texture.type;
-  material->textures[index].id     = texture.id;
-  material->textures[index].format = texture.format;
-
+  sglr_set_material_sampler_i_2(material, index, texture.type, texture.id);
 }
 
 void sglr_set_material_sampler_i_2(sglr_Material* material, int index, GLenum texture_type, GLuint texture_id){
 
-  if(texture_type == GL_NONE){
-    printf("assertion failed: texture type is GL_NONE!\n");
-    *(int*)NULL = 0;
-  }
+  SGLR_ASSERT(texture_type != GL_NONE);
+
+  // samplers cant be multisample
+  SGLR_ASSERT(texture_type != GL_TEXTURE_2D_MULTISAMPLE);
+
   
   material->textures[index].type   = texture_type;
   material->textures[index].id     = texture_id;
