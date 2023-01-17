@@ -33,6 +33,7 @@ static int sglr_check_shader_link(const GLuint shader){
   
   return 0;
 }
+
 sglr_Shader sglr_make_shader(const char* vertex,
                              const char* tesselation_control,
                              const char* tesselation_eval,
@@ -146,6 +147,26 @@ sglr_Shader sglr_make_shader(const char* vertex,
   shader.model_loc   = glGetAttribLocation(shader.id, "model");
   sglr_check_error();
 
+    const char* texture_names[4] = {
+    "texture_0",
+    "texture_1",
+    "texture_2",
+    "texture_3",
+  };
+
+  const char* block_names[4] = {
+    "interface_block_0",
+    "interface_block_1",
+    "interface_block_2",
+    "interface_block_3"
+  };
+  
+  for(int i = 0; i < 4; i++){
+    shader.texture_locs[i] = glGetUniformLocation(shader.id, texture_names[i]);
+    shader.buffer_locs[i]  = glGetUniformBlockIndex(shader.id, block_names[i]);
+    sglr_check_error();
+  }
+
   return shader;
 }
 
@@ -176,6 +197,69 @@ void sglr_free_shader(sglr_Shader shader){
     sglr_check_error();
   }
   sglr_check_error();
+}
+
+sglr_Shader sglr_make_shader_compute(const char* compute){
+  sglr_Shader shader;
+  N1_ZERO_MEMORY(&shader);
+
+  if(compute == NULL){
+    return shader;
+  }
+
+  shader.id = glCreateProgram();
+  sglr_check_error();
+    
+  shader.compute_id = glCreateShader(GL_COMPUTE_SHADER);
+
+  glShaderSource(shader.compute_id, 1, &compute, NULL);
+  glCompileShader(shader.compute_id);
+  
+  if(!sglr_check_shader_module(shader.compute_id, "compute")){
+    sglr_check_error();
+    *(int*)NULL = 0;
+    return shader;
+  }
+  
+  sglr_check_error();
+  glAttachShader(shader.id, shader.compute_id);
+  sglr_check_error();
+  
+  glLinkProgram(shader.id);
+  sglr_check_error();
+  
+  sglr_set_shader(shader);
+  
+  if(!sglr_check_shader_link(shader.id)){
+    sglr_check_error();
+    *(int*)NULL = 0;
+    return shader;
+  }
+
+  
+  const char* texture_names[4] = {
+    "texture_0",
+    "texture_1",
+    "texture_2",
+    "texture_3",
+  };
+
+  const char* block_names[4] = {
+    "interface_block_0",
+    "interface_block_1",
+    "interface_block_2",
+    "interface_block_3"
+  };
+  
+  for(int i = 0; i < 4; i++){
+    shader.texture_locs[i] = glGetUniformLocation(shader.id, texture_names[i]);
+    shader.buffer_locs[i]  = glGetUniformBlockIndex(shader.id, block_names[i]);
+    sglr_check_error();
+  }
+
+
+  
+  return shader;
 }
 
 void sglr_set_shader(sglr_Shader shader){

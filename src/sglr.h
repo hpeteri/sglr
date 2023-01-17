@@ -16,6 +16,7 @@
 #include "sglr_texture.h"
 #include "sglr_material.h"
 #include "sglr_graphics_pipeline.h"
+#include "sglr_compute_pipeline.h"
 #include "sglr_color.h"
 #include "sglr_bitmap_font.h"
 

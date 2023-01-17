@@ -1,6 +1,5 @@
 #include "sglr_command_buffer.h"
 
-
 // primary
 sglr_CommandBuffer* sglr_make_command_buffer(){
   sglr_Context* context = sglr_current_context();
@@ -67,8 +66,6 @@ void sglr_command_buffer_execute(sglr_CommandBuffer* command_buffer){
 }
 
 // secondary
-
-// - immediate mode
 sglr_CommandBuffer2* sglr_make_command_buffer2_im(sglr_GraphicsPipeline graphics_pipeline){
   sglr_Context* context = sglr_current_context();
   n1_Allocator allocator = context->allocator;
@@ -77,12 +74,29 @@ sglr_CommandBuffer2* sglr_make_command_buffer2_im(sglr_GraphicsPipeline graphics
   N1_ZERO_MEMORY(cb);
 
   cb->type              = SGLR_COMMAND_BUFFER_2_TYPE_IM;
-  cb->graphics_pipeline = graphics_pipeline;
-  cb->im.vert_max_count = 256;
-  cb->im.vertices = allocator.alloc(sizeof(IM_Vertex) * cb->im.vert_max_count);
 
-  cb->im.idx_max_count  = 256;
-  cb->im.indices        = (uint32_t*)allocator.alloc(sizeof(uint32_t) * cb->im.idx_max_count);
+  cb->im.graphics_pipeline = graphics_pipeline;
+  cb->im.vert_max_count    = 256;
+  cb->im.vertices          = allocator.alloc(sizeof(sglr_IMVertex) * cb->im.vert_max_count);
+  cb->im.idx_max_count     = 256;
+  cb->im.indices           = allocator.alloc(sizeof(uint32_t) * cb->im.idx_max_count);
+
+  return cb;
+}
+
+
+sglr_CommandBuffer2* sglr_make_command_buffer2_compute(sglr_ComputePipeline compute_pipeline){
+  sglr_Context* context = sglr_current_context();
+  n1_Allocator allocator = context->allocator;
+
+  sglr_CommandBuffer2* cb = (sglr_CommandBuffer2*)allocator.alloc(sizeof(sglr_CommandBuffer2));
+  N1_ZERO_MEMORY(cb);
+
+  cb->type                 = SGLR_COMMAND_BUFFER_2_TYPE_COMPUTE;
+  
+  cb->compute.work_group_max_count = 256;
+  cb->compute.pipeline     = compute_pipeline;
+
   return cb;
 }
 
@@ -94,7 +108,7 @@ void sglr_immediate_vertex(sglr_CommandBuffer2* scb, vec3 pos){
 
   if(scb->im.vert_count == scb->im.vert_max_count){
     scb->im.vert_max_count *= 2;
-    scb->im.vertices = allocator.realloc(scb->im.vertices, sizeof(IM_Vertex) * scb->im.vert_max_count);
+    scb->im.vertices = allocator.realloc(scb->im.vertices, sizeof(sglr_IMVertex) * scb->im.vert_max_count);
   }
 
   scb->im.vertices[scb->im.vert_count++] = scb->im.current;
@@ -495,145 +509,185 @@ void sglr_command_buffer2_submit(sglr_CommandBuffer2* scb, sglr_CommandBuffer* c
   tail->next = scb;
 }
 
-void sglr_command_buffer2_execute(sglr_CommandBuffer2* scb){
-
-  if(scb->type == SGLR_COMMAND_BUFFER_2_TYPE_IM){
-    const uint32_t vert_count = scb->im.vert_count;
-    const uint32_t idx_count  = scb->im.idx_count;
-
-    glDrawBuffer(GL_COLOR_ATTACHMENT0 + scb->draw_layer_idx);
+static void sglr_command_buffer2_execute_im(sglr_CommandBuffer2* scb){
     
-    if(vert_count){
-      sglr_Buffer vert_buffer = sglr_make_buffer_vertex(sizeof(IM_Vertex) * vert_count, scb->im.vertices);
+  const uint32_t vert_count = scb->im.vert_count;
+  const uint32_t idx_count  = scb->im.idx_count;
 
-      // === idx ====
-      sglr_Buffer idx_buffer = sglr_make_buffer_index(sizeof(uint32_t) * idx_count, scb->im.indices);
+  if(!vert_count || !idx_count){
+    goto cleanup_im;
+  }
+    
+  glDrawBuffer(GL_COLOR_ATTACHMENT0 + scb->draw_layer_idx);
+  
+  sglr_Buffer vert_buffer = sglr_make_buffer_vertex(sizeof(sglr_IMVertex) * vert_count,
+                                                    scb->im.vertices);
+  sglr_Buffer idx_buffer = sglr_make_buffer_index(sizeof(uint32_t) * idx_count, scb->im.indices);
             
-      sglr_GraphicsPipeline graphics_pipeline = scb->graphics_pipeline;
-      sglr_Shader shader = graphics_pipeline.material.shader;
+  sglr_GraphicsPipeline graphics_pipeline = scb->im.graphics_pipeline;
+  sglr_Shader shader = graphics_pipeline.material.shader;
       
-      //identity model
+  //identity model
       
-      mat4 identity = mat4_scalef(1);
-      if(shader.model_loc != -1){
-        glVertexAttrib4fv(shader.model_loc + 0, identity.a_v[0].a);
-        glVertexAttrib4fv(shader.model_loc + 1, identity.a_v[1].a);
-        glVertexAttrib4fv(shader.model_loc + 2, identity.a_v[2].a);
-        glVertexAttrib4fv(shader.model_loc + 3, identity.a_v[3].a);
-        sglr_check_error();
-      }
+  mat4 identity = mat4_scalef(1);
+  if(shader.model_loc != -1){
+    glVertexAttrib4fv(shader.model_loc + 0, identity.a_v[0].a);
+    glVertexAttrib4fv(shader.model_loc + 1, identity.a_v[1].a);
+    glVertexAttrib4fv(shader.model_loc + 2, identity.a_v[2].a);
+    glVertexAttrib4fv(shader.model_loc + 3, identity.a_v[3].a);
+    sglr_check_error();
+  }
       
-      sglr_set_graphics_pipeline(graphics_pipeline);
+  sglr_set_graphics_pipeline(graphics_pipeline);
 
-      sglr_set_buffer(vert_buffer);
-      if(shader.pos_loc != -1){
-        //bind pos buffer
-        glEnableVertexAttribArray(shader.pos_loc);
-        glVertexAttribPointer(shader.pos_loc,
-                              3,
-                              GL_FLOAT,
-                              GL_FALSE,
-                              sizeof(IM_Vertex),
-                              (void*)offsetof(IM_Vertex, pos));
-        sglr_check_error();
-      }
+  sglr_set_buffer(vert_buffer);
+  if(shader.pos_loc != -1){
+    //bind pos buffer
+    glEnableVertexAttribArray(shader.pos_loc);
+    glVertexAttribPointer(shader.pos_loc,
+                          3,
+                          GL_FLOAT,
+                          GL_FALSE,
+                          sizeof(sglr_IMVertex),
+                          (void*)offsetof(sglr_IMVertex, pos));
+    sglr_check_error();
+  }
 
-      if(shader.tc_loc != -1){
-        glEnableVertexAttribArray(shader.tc_loc);
-        glVertexAttribPointer(shader.tc_loc,
-                              3,
-                              GL_FLOAT,
-                              GL_FALSE,
-                              sizeof(IM_Vertex),
-                              (void*)offsetof(IM_Vertex, tc));
-        sglr_check_error();
-      }
+  if(shader.tc_loc != -1){
+    glEnableVertexAttribArray(shader.tc_loc);
+    glVertexAttribPointer(shader.tc_loc,
+                          3,
+                          GL_FLOAT,
+                          GL_FALSE,
+                          sizeof(sglr_IMVertex),
+                          (void*)offsetof(sglr_IMVertex, tc));
+    sglr_check_error();
+  }
 
-      if(shader.color_loc != -1){
-        glEnableVertexAttribArray(shader.color_loc);
-        glVertexAttribPointer(shader.color_loc,
-                              4,
-                              GL_UNSIGNED_BYTE,
-                              GL_TRUE,
-                              sizeof(IM_Vertex),
-                              (void*)offsetof(IM_Vertex, color));
-        sglr_check_error();
-      }
+  if(shader.color_loc != -1){
+    glEnableVertexAttribArray(shader.color_loc);
+    glVertexAttribPointer(shader.color_loc,
+                          4,
+                          GL_UNSIGNED_BYTE,
+                          GL_TRUE,
+                          sizeof(sglr_IMVertex),
+                          (void*)offsetof(sglr_IMVertex, color));
+    sglr_check_error();
+  }
 
-      if(shader.norm_loc != -1){
-        glEnableVertexAttribArray(shader.norm_loc);
-        glVertexAttribPointer(shader.norm_loc,
-                              3,
-                              GL_FLOAT,
-                              GL_FALSE,
-                              sizeof(IM_Vertex),
-                              (void*)offsetof(IM_Vertex, norm));
-        sglr_check_error();
-      }
+  if(shader.norm_loc != -1){
+    glEnableVertexAttribArray(shader.norm_loc);
+    glVertexAttribPointer(shader.norm_loc,
+                          3,
+                          GL_FLOAT,
+                          GL_FALSE,
+                          sizeof(sglr_IMVertex),
+                          (void*)offsetof(sglr_IMVertex, norm));
+    sglr_check_error();
+  }
       
-      //set renderer state
-      //...
+  //set renderer state
+  //...
 
-      //draw
-      //set camera
-      if(scb->flags & SGLR_COMMAND_BUFFER_2_MULTI_LAYER_BIT){
+  //draw
+  //set camera
+  if(scb->flags & SGLR_COMMAND_BUFFER_2_MULTI_LAYER_BIT){
 
           
-        GLuint cam_info_loc = glGetUniformBlockIndex(shader.id, "cam_info");
-        if(cam_info_loc != GL_INVALID_INDEX){
+    GLuint cam_info_loc = glGetUniformBlockIndex(shader.id, "cam_info");
+    if(cam_info_loc != GL_INVALID_INDEX){
 
-          sglr_Buffer cam_info = sglr_make_buffer_uniform(sizeof(scb->cam_info),
-                                                          &scb->cam_info);
+      sglr_Buffer cam_info = sglr_make_buffer_uniform(sizeof(scb->cam_info),
+                                                      &scb->cam_info);
 
-          sglr_set_buffer_debug_name(cam_info, "cam_info");
+      sglr_set_buffer_debug_name(cam_info, "cam_info");
             
-          //@todo, check that buffers on cpu and gpu are the same size
-          glBindBufferBase(GL_UNIFORM_BUFFER, cam_info_loc, cam_info.id);
-          sglr_check_error();
+      //@todo, check that buffers on cpu and gpu are the same size
+      glBindBufferBase(GL_UNIFORM_BUFFER, cam_info_loc, cam_info.id);
+      sglr_check_error();
 
           
-          glDrawElements(scb->graphics_pipeline.topology, idx_count, GL_UNSIGNED_INT, NULL);
-          sglr_stats_add_triangle_count_indexed(idx_count, GL_TRIANGLES);
-          sglr_stats_add_draw_call_count(1);
+      glDrawElements(scb->im.graphics_pipeline.topology, idx_count, GL_UNSIGNED_INT, NULL);
+      sglr_stats_add_triangle_count_indexed(idx_count, GL_TRIANGLES);
+      sglr_stats_add_draw_call_count(1);
           
-          sglr_free_buffer(cam_info);
+      sglr_free_buffer(cam_info);
 
           
-        }else{
-          *(int*)NULL = 0;
-        }
-      }else{
-        sglr_set_uniform_mat4(shader, "cam_proj", sglr_camera_matrix(scb->cams[0]));
-                
-        glDrawElements(scb->graphics_pipeline.topology, idx_count, GL_UNSIGNED_INT, 0);
-        sglr_stats_add_triangle_count_indexed(idx_count, GL_TRIANGLES);
-        sglr_stats_add_draw_call_count(1);
-      }
-      
-      if(shader.pos_loc != -1){
-        glDisableVertexAttribArray(shader.pos_loc);
-        sglr_check_error();
-      }
-      if(shader.tc_loc != -1){
-        glDisableVertexAttribArray(shader.tc_loc);
-        sglr_check_error();
-      }
-      if(shader.color_loc != -1){
-        glDisableVertexAttribArray(shader.color_loc);
-        sglr_check_error();
-      }
-      if(shader.norm_loc != -1){
-        glDisableVertexAttribArray(shader.norm_loc);
-        sglr_check_error();
-      }
-      
-      sglr_free_buffer(vert_buffer);
-      sglr_free_buffer(idx_buffer);
-
-      sglr_unset_shader();
+    }else{
+      *(int*)NULL = 0;
     }
   }else{
-    //assert
+    sglr_set_uniform_mat4(shader, "cam_proj", sglr_camera_matrix(scb->cams[0]));
+                
+    glDrawElements(scb->im.graphics_pipeline.topology, idx_count, GL_UNSIGNED_INT, 0);
+    sglr_stats_add_triangle_count_indexed(idx_count, GL_TRIANGLES);
+    sglr_stats_add_draw_call_count(1);
+  }
+      
+  if(shader.pos_loc != -1){
+    glDisableVertexAttribArray(shader.pos_loc);
+    sglr_check_error();
+  }
+  if(shader.tc_loc != -1){
+    glDisableVertexAttribArray(shader.tc_loc);
+    sglr_check_error();
+  }
+  if(shader.color_loc != -1){
+    glDisableVertexAttribArray(shader.color_loc);
+    sglr_check_error();
+  }
+  if(shader.norm_loc != -1){
+    glDisableVertexAttribArray(shader.norm_loc);
+    sglr_check_error();
+  }
+
+  sglr_unset_shader();
+  
+ cleanup_im:
+  
+  sglr_free_buffer(vert_buffer);
+  sglr_free_buffer(idx_buffer);
+}
+
+static void sglr_command_buffer2_execute_compute(sglr_CommandBuffer2* scb){
+  sglr_set_compute_pipeline(scb->compute.pipeline);
+  for(int i = 0; i < scb->compute.work_group_count; i++){
+    sglr_ComputeWorkGroup work_group = scb->compute.work_groups[i];
+    glDispatchCompute(work_group.width,
+                      work_group.height,
+                      work_group.depth);
+    sglr_check_error();
+    
+  }
+}
+
+void sglr_command_buffer2_execute(sglr_CommandBuffer2* scb){
+  
+  if(scb->type == SGLR_COMMAND_BUFFER_2_TYPE_IM){
+
+    sglr_command_buffer2_execute_im(scb);
+  }else if(scb->type == SGLR_COMMAND_BUFFER_2_TYPE_COMPUTE){
+
+    sglr_command_buffer2_execute_compute(scb);
+  }else{
+    
     *(int*)NULL = 0;
+  }
+}
+
+void sglr_compute_dispatch(sglr_CommandBuffer2* scb, int32_t width, int32_t height, int32_t depth){
+  if(scb->type !=  SGLR_COMMAND_BUFFER_2_TYPE_COMPUTE){
+    *(int*)NULL = 0;
+  }
+  if(scb->compute.work_group_count < scb->compute.work_group_max_count){
+    sglr_ComputeWorkGroup work_group =
+    {
+      .width = width,
+      .height = height,
+      .depth = depth
+    };
+    
+    scb->compute.work_groups[scb->compute.work_group_count ++] = work_group;
   }
 }

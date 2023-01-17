@@ -15,7 +15,7 @@ typedef enum SGLR_RENDER_TARGET_TYPE{
 typedef struct sglr_RenderTargetAttachment{
 
   GLenum type;
-  GLint id;
+  GLint  id;
   GLenum format;
   
 } sglr_RenderTargetAttachment;

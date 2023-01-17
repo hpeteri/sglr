@@ -7,18 +7,26 @@
 typedef struct sglr_Shader{
   GLuint id;
 
+  
   GLuint geometry_id;
   GLuint tesselation_control_id;
   GLuint tesselation_eval_id;
   GLuint vertex_id;
   GLuint fragment_id;
+  GLuint compute_id;
 
+  //====================
+  //attribute locations
   int pos_loc;
   int tc_loc;
   int color_loc;
   int norm_loc;
   int model_loc;
-  
+
+  //====================
+  GLint texture_locs[4];
+  GLint buffer_locs [4];
+    
 } sglr_Shader;
 
 sglr_Shader sglr_make_shader(const char* vertex,
@@ -26,6 +34,8 @@ sglr_Shader sglr_make_shader(const char* vertex,
                              const char* tesselation_eval,
                              const char* geometry,
                              const char* fragment);
+
+sglr_Shader sglr_make_shader_compute(const char* compute);
 
 sglr_Shader sglr_make_shader_builtin_flat();
 sglr_Shader sglr_make_shader_builtin_text();

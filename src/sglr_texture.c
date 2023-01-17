@@ -7,10 +7,11 @@ sglr_Texture sglr_make_texture_2d(uint32_t width, uint32_t height,
   sglr_Texture texture;
   N1_ZERO_MEMORY(&texture);  
 
-  texture.type = GL_TEXTURE_2D;
+  texture.type   = GL_TEXTURE_2D;
   texture.width  = width;
   texture.height = height;
-  texture.depth = 1;
+  texture.depth  = 1;
+  texture.format = internal_format;
   
   glGenTextures(1, &texture.id);
   sglr_check_error();
@@ -42,10 +43,11 @@ sglr_Texture sglr_make_texture_2d_array(uint32_t width, uint32_t height, uint32_
   sglr_Texture texture;
   N1_ZERO_MEMORY(&texture);
   
-  texture.type = GL_TEXTURE_2D_ARRAY;
+  texture.type   = GL_TEXTURE_2D_ARRAY;
   texture.width  = width;
   texture.height = height;
-  texture.depth = depth;
+  texture.depth  = depth;
+  texture.format = internal_format;
     
   glGenTextures(1, &texture.id);
   sglr_check_error();
