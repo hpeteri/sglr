@@ -31,7 +31,7 @@ typedef struct sglr_RenderTarget{
   SGLR_RENDER_TARGET_TYPE type;
   
   sglr_RenderTargetAttachment color_attachment_0;
-  sglr_RenderTargetAttachment color_attachment_1; //gbuffer for shadows
+  sglr_RenderTargetAttachment color_attachment_1; //g_buffer for world position
   
   sglr_RenderTargetAttachment depth_attachment;
   

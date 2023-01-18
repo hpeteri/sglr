@@ -37,7 +37,6 @@ sglr_RenderTarget sglr_make_render_target(int32_t width, int32_t height, int32_t
       rt.color_attachment_0.format = color_format;
       rt.color_attachment_0.type   = GL_TEXTURE_2D_MULTISAMPLE;
       
-      
       // attachment 1
       glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, color_id_1);
       glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA16F, width, height, GL_TRUE); 
@@ -333,11 +332,13 @@ void sglr_set_clear_color_4f_rgba(float r, float g, float b, float a){
 }
 
 void sglr_set_clear_depth(float value){
+  
   glClearDepth(value);
   sglr_check_error();
 }
 
 void sglr_clear_render_target_depth(){
+  glDepthMask(GL_TRUE);
   glClear(GL_DEPTH_BUFFER_BIT);
   
   sglr_check_error();
