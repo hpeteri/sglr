@@ -60,7 +60,9 @@ typedef enum SGLR_COMMAND_BUFFER_COMMAND_TYPE{
   SGLR_COMMAND_BUFFER_COMMAND_IM,
   SGLR_COMMAND_BUFFER_COMMAND_COMPUTE_DISPATCH,
   SGLR_COMMAND_BUFFER_COMMAND_SET_COMPUTE_PIPELINE,
-  SGLR_COMMAND_BUFFER_COMMAND_SET_GRPAHICS_PIPELINE,
+  SGLR_COMMAND_BUFFER_COMMAND_SET_GRAPHICS_PIPELINE,
+  SGLR_COMMAND_BUFFER_COMMAND_MEMORY_BARRIER,
+  SGLR_COMMAND_BUFFER_COMMAND_TEXTURE_BARRIER,
   
 } SGLR_COMMAND_BUFFER_COMMAND_TYPE;
 
@@ -69,11 +71,12 @@ typedef struct sglr_CommandBufferCmd{
   SGLR_COMMAND_BUFFER_COMMAND_TYPE type;
   
   union{
-    sglr_ImmediateModeCmd*   im;
+    sglr_ImmediateModeCmd*  im;
     sglr_ComputeDispatchCmd compute_dispatch;
     
-    sglr_ComputePipeline    compute_pipeline;
-    sglr_GraphicsPipeline   graphics_pipeline;    
+    sglr_ComputePipeline  compute_pipeline;
+    sglr_GraphicsPipeline graphics_pipeline;    
+    int                   value;
   };
   
 } sglr_CommandBufferCmd;
@@ -115,9 +118,14 @@ void sglr_command_buffer2_add_cam_to_layer(sglr_CommandBuffer2* scb, sglr_Camera
 void sglr_command_buffer2_set_draw_layer(sglr_CommandBuffer2* scb, int layer);
 
 // commands
+void sglr_cmd_memory_barrier(sglr_CommandBuffer2* scb, GLbitfield barriers);
+void sglr_cmd_texture_barrier(sglr_CommandBuffer2* scb);
+
+// compute
 void sglr_cmd_set_compute_pipeline(sglr_CommandBuffer2* scb, sglr_ComputePipeline pipeline);
 void sglr_cmd_compute_dispatch(sglr_CommandBuffer2* scb, int32_t width, int32_t height, int32_t depth);
+
+//draw 
+void sglr_cmd_set_graphics_pipeline(sglr_CommandBuffer2* scb, sglr_GraphicsPipeline pipeline);
 void sglr_cmd_immediate_draw(sglr_CommandBuffer2* scb, sglr_ImmediateModeCmd* batch);
-
-
 #endif

@@ -48,6 +48,7 @@ void        sglr_unset_shader();
 //uniform access
 void sglr_set_uniform_int(sglr_Shader shader, const char* name, uint32_t i);
 void sglr_set_uniform_mat4(sglr_Shader shader, const char* name, mat4 mat);
+void sglr_set_uniform_vec4(sglr_Shader shader, const char* name, float x, float y, float z, float w);
 
 void sglr_set_shader_debug_name(sglr_Shader shader, const char* name);
 

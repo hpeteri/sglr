@@ -150,14 +150,14 @@ sglr_Shader sglr_make_shader(const char* vertex,
   
   shader.model_loc   = glGetAttribLocation(shader.id, "model");
   sglr_check_error();
-
-    const char* texture_names[4] = {
+  
+  const char* texture_names[4] = {
     "texture_0",
     "texture_1",
     "texture_2",
     "texture_3",
   };
-
+  
   const char* block_names[4] = {
     "interface_block_0",
     "interface_block_1",
@@ -240,6 +240,13 @@ sglr_Shader sglr_make_shader_compute(const char* compute){
     return shader;
   }
 
+  //query locations
+  shader.pos_loc   = glGetAttribLocation(shader.id, "vert_pos");
+  shader.tc_loc    = glGetAttribLocation(shader.id, "vert_tc");
+  shader.color_loc = glGetAttribLocation(shader.id, "vert_color");
+  shader.norm_loc  = glGetAttribLocation(shader.id, "vert_norm");
+
+  sglr_check_error();
   
   const char* texture_names[4] = {
     "texture_0",
@@ -260,8 +267,6 @@ sglr_Shader sglr_make_shader_compute(const char* compute){
     shader.buffer_locs[i]  = glGetUniformBlockIndex(shader.id, block_names[i]);
     sglr_check_error();
   }
-
-
   
   return shader;
 }
@@ -336,6 +341,23 @@ void sglr_set_uniform_mat4(sglr_Shader shader, const char* name, mat4 mat){
   sglr_check_error();
 }
 
+void sglr_set_uniform_vec4(sglr_Shader shader, const char* name, float x, float y, float z, float w){
+
+
+  int loc = glGetUniformLocation(shader.id, name);
+  sglr_check_error();
+
+  if(loc == -1){
+    return;
+  }
+  glUniform4f(loc,
+              x, y, z, w);
+  
+  sglr_check_error();
+
+  
+  
+}
 void sglr_set_shader_debug_name(sglr_Shader shader, const char* name){
   glObjectLabel(GL_PROGRAM,
                 shader.id,

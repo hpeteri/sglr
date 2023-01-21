@@ -3,10 +3,15 @@
 
 #include "sglr_shader.h"
 #include "sglr_texture.h"
+
 typedef struct sglr_MaterialTextureBinding{
-  GLenum      type;
-  GLuint      id;
-  GLenum      format;
+  GLenum type;
+  GLuint id;
+  GLenum format;
+
+  // flags
+  int    is_image : 1;          //sampler or binding
+  
 } sglr_MaterialTextureBinding;
 
 typedef struct sglr_UniformBufferBinding{
@@ -49,6 +54,7 @@ void sglr_set_material_sampler_i_2(sglr_Material* material, int index, GLenum te
 
 //image
 void sglr_set_material_image_i(sglr_Material* material, int index, sglr_Texture texture);
+void sglr_set_material_image_i_2(sglr_Material* material, int index, GLenum texture_type, GLenum texture_format, GLuint texture_id);
 
 //buffer
 void sglr_set_material_buffer_i(sglr_Material* material, int index, sglr_Buffer buffer);

@@ -26,8 +26,6 @@ void sglr_set_texture_swizzle(sglr_Texture texture, GLint component, GLint swizz
 void sglr_set_texture_min_filter(sglr_Texture texture, GLenum mode);
 void sglr_set_texture_mag_filter(sglr_Texture texture, GLenum mode);
 
-
-
 void sglr_free_texture(sglr_Texture texture);
 
 void sglr_set_texture(sglr_Texture texture);

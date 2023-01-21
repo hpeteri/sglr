@@ -7,7 +7,6 @@
   { if(!(expression)){                          \
       printf("sglr_assertion failed:\n");       \
       printf("file: %s\n", __FILE__);           \
-      printf("file: %s\n", __FILE__);                      \
       printf("func: '%s' at line '%d'\n", __func__, __LINE__);  \
       *(int*)NULL = 0;}}
 #else

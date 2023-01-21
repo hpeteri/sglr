@@ -2,10 +2,13 @@
 
 #include "sglr_immediate_mode.c"
 
+static void sglr_maybe_expand_cmd_buffer(sglr_CommandBuffer2* scb);
+static void sglr_push_cmd(sglr_CommandBuffer2* scb, sglr_CommandBufferCmd cmd);
 
 static void sglr_execute_immediate_cmd(sglr_ImmediateModeCmd* im,
                                        SGLR_COMMAND_BUFFER_2_FLAGS command_buffer_flags,
                                        struct sglr_CommandBuffer2CamInfo cam_info);
+
 
 
 // primary
@@ -171,6 +174,12 @@ void sglr_command_buffer2_execute(sglr_CommandBuffer2* scb){
         sglr_set_compute_pipeline(pipeline);      
         break;
       }
+    case SGLR_COMMAND_BUFFER_COMMAND_SET_GRAPHICS_PIPELINE:
+      {
+        const sglr_GraphicsPipeline pipeline = cmd.graphics_pipeline;
+        sglr_set_graphics_pipeline(pipeline);  
+        break;
+      }
     case SGLR_COMMAND_BUFFER_COMMAND_IM:
       {
         sglr_execute_immediate_cmd(cmd.im,
@@ -183,7 +192,18 @@ void sglr_command_buffer2_execute(sglr_CommandBuffer2* scb){
   
         break;
       }
-
+    case SGLR_COMMAND_BUFFER_COMMAND_MEMORY_BARRIER:
+      {
+        glMemoryBarrier(cmd.value);
+        sglr_check_error();
+        break;
+      }
+    case SGLR_COMMAND_BUFFER_COMMAND_TEXTURE_BARRIER:
+      {
+        glTextureBarrier();
+        sglr_check_error();
+        break;
+      }      
     default:
       SGLR_ASSERT(0);
       break;
@@ -213,10 +233,23 @@ static void sglr_maybe_expand_cmd_buffer(sglr_CommandBuffer2* scb){
 }
 
 static void sglr_push_cmd(sglr_CommandBuffer2* scb, sglr_CommandBufferCmd cmd){
-
   sglr_maybe_expand_cmd_buffer(scb);
   scb->cmds[scb->cmd_count++] = cmd;
-  
+}
+
+void sglr_cmd_memory_barrier(sglr_CommandBuffer2* scb, GLbitfield barriers){
+  sglr_CommandBufferCmd cmd;
+  cmd.type = SGLR_COMMAND_BUFFER_COMMAND_MEMORY_BARRIER;
+  cmd.value = barriers;
+
+  sglr_push_cmd(scb, cmd);  
+}
+
+void sglr_cmd_texture_barrier(sglr_CommandBuffer2* scb){
+  sglr_CommandBufferCmd cmd;
+  cmd.type = SGLR_COMMAND_BUFFER_COMMAND_TEXTURE_BARRIER;
+
+  sglr_push_cmd(scb, cmd);  
 }
 
 void sglr_cmd_compute_dispatch(sglr_CommandBuffer2* scb, int32_t width, int32_t height, int32_t depth){
@@ -235,6 +268,14 @@ void sglr_cmd_set_compute_pipeline(sglr_CommandBuffer2* scb, sglr_ComputePipelin
   sglr_CommandBufferCmd cmd;
   cmd.type = SGLR_COMMAND_BUFFER_COMMAND_SET_COMPUTE_PIPELINE;
   cmd.compute_pipeline = pipeline;
+  
+  sglr_push_cmd(scb, cmd);  
+}
+
+void sglr_cmd_set_graphics_pipeline(sglr_CommandBuffer2* scb, sglr_GraphicsPipeline pipeline){
+  sglr_CommandBufferCmd cmd;
+  cmd.type = SGLR_COMMAND_BUFFER_COMMAND_SET_GRAPHICS_PIPELINE;
+  cmd.graphics_pipeline = pipeline;
   
   sglr_push_cmd(scb, cmd);  
 }
