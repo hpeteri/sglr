@@ -56,13 +56,20 @@ void sglr_copy_buffer(sglr_Buffer src, sglr_Buffer dst, uint32_t src_offset, uin
 }
 
 void sglr_fill_buffer(sglr_Buffer src, uint32_t size, void* data){
-  
+#if 1
+  glNamedBufferData(src.id,
+                    size,
+                    data,
+                    src.usage);
+#else
+
   void * dst = glMapNamedBuffer(src.id,
                                  GL_WRITE_ONLY);
   
   memcpy(dst, data, size);
   
   glUnmapNamedBuffer(src.id);
+#endif
   sglr_check_error();
 }
 void sglr_free_buffer(sglr_Buffer buffer){

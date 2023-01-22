@@ -289,6 +289,11 @@ void sglr_free_render_target(sglr_RenderTarget target){
     sglr_check_error();
   }
 
+  if(target.color_attachment_1.id){
+    glDeleteTextures(1, &target.color_attachment_1.id);
+    sglr_check_error();
+  }
+
   if(target.depth_attachment.id){
     glDeleteTextures(1, &target.depth_attachment.id);
     sglr_check_error();
