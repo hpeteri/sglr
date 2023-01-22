@@ -53,12 +53,19 @@ void sglr_set_material_2(sglr_Material material, int is_compute){
   }
   
   
+  
   for(int i = 0; i < 4; i++){
     GLint loc = material.shader.buffer_locs[i];
-    if(loc != (int32_t)GL_INVALID_INDEX){
-      glBindBufferBase(GL_UNIFORM_BUFFER, loc, material.buffers[i].id);
+    
+    if(material.buffers[i].id){
+      
+      glUniformBlockBinding(material.shader.id, 0, i);
+      glBindBufferBase(GL_UNIFORM_BUFFER, i, material.buffers[i].id);
       sglr_check_error();  
+
     }
+
+    
   }
 
   sglr_check_error();  
@@ -70,6 +77,7 @@ void sglr_set_material_sampler_i(sglr_Material* material, int index, sglr_Textur
 }
 
 void sglr_set_material_sampler_i_2(sglr_Material* material, int index, GLenum texture_type, GLuint texture_id){
+  
   SGLR_ASSERT(texture_type != GL_NONE);
 
   // samplers cant be multisample
