@@ -65,7 +65,7 @@ typedef enum SGLR_COMMAND_BUFFER_COMMAND_TYPE{
   SGLR_COMMAND_BUFFER_COMMAND_TEXTURE_BARRIER,
   
 } SGLR_COMMAND_BUFFER_COMMAND_TYPE;
-
+  
 typedef struct sglr_CommandBufferCmd{
 
   SGLR_COMMAND_BUFFER_COMMAND_TYPE type;
@@ -82,15 +82,17 @@ typedef struct sglr_CommandBufferCmd{
 } sglr_CommandBufferCmd;
 
 
+#define MULTI_CAMERA_COUNT_MAX (4)
 struct sglr_CommandBuffer2CamInfo{
   uint32_t cam_count;
   uint32_t pad_0;
   uint32_t pad_1;
   uint32_t pad_2;
     
-  uint32_t render_layers[12];
-  mat4     cam_projections[12];
+  uint32_t render_layers[MULTI_CAMERA_COUNT_MAX];
+  mat4     cam_projections[MULTI_CAMERA_COUNT_MAX];
 };
+
 struct sglr_CommandBuffer2{
 
   SGLR_COMMAND_BUFFER_2_FLAGS flags;

@@ -6,6 +6,7 @@ static void sglr_maybe_expand_cmd_buffer(sglr_CommandBuffer2* scb);
 static void sglr_push_cmd(sglr_CommandBuffer2* scb, sglr_CommandBufferCmd cmd);
 
 static void sglr_execute_immediate_cmd(sglr_ImmediateModeCmd* im,
+                                       sglr_GraphicsPipeline pipeline,
                                        SGLR_COMMAND_BUFFER_2_FLAGS command_buffer_flags,
                                        struct sglr_CommandBuffer2CamInfo cam_info);
 
@@ -16,7 +17,7 @@ sglr_CommandBuffer* sglr_make_command_buffer(){
   sglr_Context* context = sglr_current_context();
   n1_Allocator allocator = context->allocator;
 
-  sglr_CommandBuffer* cb = (sglr_CommandBuffer*)allocator.alloc(sizeof(sglr_CommandBuffer));
+  sglr_CommandBuffer* cb = allocator.alloc(sizeof(sglr_CommandBuffer));
   N1_ZERO_MEMORY(cb);
 
   return cb;  
@@ -89,8 +90,8 @@ sglr_CommandBuffer2* sglr_make_command_buffer2(){
 }
 
 void sglr_command_buffer2_add_cam(sglr_CommandBuffer2* scb, sglr_Camera camera){
-
-  if(scb->cam_info.cam_count < 256){
+  
+  if(scb->cam_info.cam_count < MULTI_CAMERA_COUNT_MAX){
     const uint32_t count = scb->cam_info.cam_count;
     
     scb->cam_info.render_layers[count]   = 0;
@@ -105,7 +106,7 @@ void sglr_command_buffer2_add_cam_to_layer(sglr_CommandBuffer2* scb, sglr_Camera
   
   scb->flags |= SGLR_COMMAND_BUFFER_2_MULTI_LAYER_BIT;
   
-  if(scb->cam_info.cam_count < 256){
+  if(scb->cam_info.cam_count < MULTI_CAMERA_COUNT_MAX){
     const uint32_t count = scb->cam_info.cam_count;
     
     scb->cam_info.render_layers[count]   = render_layer_idx;
@@ -156,6 +157,8 @@ void sglr_command_buffer2_execute(sglr_CommandBuffer2* scb){
   sglr_Context* context = sglr_current_context();
   n1_Allocator allocator = context->allocator;
 
+  sglr_GraphicsPipeline current_pipeline = {};
+  
   for(uint32_t i = 0; i < scb->cmd_count; i++){
     sglr_CommandBufferCmd cmd = scb->cmds[i];
     
@@ -176,19 +179,27 @@ void sglr_command_buffer2_execute(sglr_CommandBuffer2* scb){
       }
     case SGLR_COMMAND_BUFFER_COMMAND_SET_GRAPHICS_PIPELINE:
       {
-        const sglr_GraphicsPipeline pipeline = cmd.graphics_pipeline;
-        sglr_set_graphics_pipeline(pipeline);  
+        current_pipeline = cmd.graphics_pipeline;
+        sglr_set_graphics_pipeline(current_pipeline);
+
         break;
       }
     case SGLR_COMMAND_BUFFER_COMMAND_IM:
       {
+        if(current_pipeline.material.shader.id == 0)
+          asm("int3");
+
+        
         sglr_execute_immediate_cmd(cmd.im,
+                                   current_pipeline,
                                    scb->flags,
                                    scb->cam_info);
 
-        allocator.free(cmd.im->vertices);
-        allocator.free(cmd.im->indices);
-        allocator.free(cmd.im);
+        if(cmd.im->submit_count == 0){
+          allocator.free(cmd.im->vertices);
+          allocator.free(cmd.im->indices);
+          allocator.free(cmd.im);
+        }
   
         break;
       }
@@ -284,16 +295,20 @@ void sglr_cmd_immediate_draw(sglr_CommandBuffer2* scb, sglr_ImmediateModeCmd* im
   sglr_CommandBufferCmd cmd;
   cmd.type = SGLR_COMMAND_BUFFER_COMMAND_IM;
   cmd.im = im;
-  
+
+  im->submit_count ++;
   sglr_push_cmd(scb, cmd);
 }
 
 
 static void sglr_execute_immediate_cmd(sglr_ImmediateModeCmd* im,
+                                       sglr_GraphicsPipeline graphics_pipeline,
                                        SGLR_COMMAND_BUFFER_2_FLAGS command_buffer_flags,
                                        struct sglr_CommandBuffer2CamInfo cam_info){
   if(!im)
     return;
+
+  im->submit_count --;
   
   const uint32_t vert_count = im->vert_count;
   const uint32_t idx_count  = im->idx_count;
@@ -302,12 +317,10 @@ static void sglr_execute_immediate_cmd(sglr_ImmediateModeCmd* im,
     goto cleanup_im;
   }
     
-  
-  sglr_Buffer vert_buffer = sglr_make_buffer_vertex(sizeof(sglr_IMVertex) * vert_count,
-                                                    im->vertices);
-  sglr_Buffer idx_buffer = sglr_make_buffer_index(sizeof(uint32_t) * idx_count, im->indices);
-            
-  sglr_GraphicsPipeline graphics_pipeline = im->graphics_pipeline;
+  if(!im->gpu_vert.id){
+    im->gpu_vert = sglr_make_buffer_vertex(sizeof(sglr_IMVertex) * vert_count, im->vertices);
+    im->gpu_idx  = sglr_make_buffer_index(sizeof(uint32_t) * idx_count, im->indices);
+  }
   sglr_Shader shader = graphics_pipeline.material.shader;
       
   //identity model
@@ -323,7 +336,8 @@ static void sglr_execute_immediate_cmd(sglr_ImmediateModeCmd* im,
       
   sglr_set_graphics_pipeline(graphics_pipeline);
 
-  sglr_set_buffer(vert_buffer);
+  sglr_set_buffer(im->gpu_vert);
+  
   if(shader.pos_loc != -1){
     //bind pos buffer
     glEnableVertexAttribArray(shader.pos_loc);
@@ -387,7 +401,7 @@ static void sglr_execute_immediate_cmd(sglr_ImmediateModeCmd* im,
       glBindBufferBase(GL_UNIFORM_BUFFER, cam_info_loc, cam_buf.id);
       sglr_check_error();
           
-      glDrawElements(im->graphics_pipeline.topology, idx_count, GL_UNSIGNED_INT, NULL);
+      glDrawElements(graphics_pipeline.topology, idx_count, GL_UNSIGNED_INT, NULL);
       sglr_stats_add_triangle_count_indexed(idx_count, GL_TRIANGLES);
       sglr_stats_add_draw_call_count(1);
           
@@ -399,8 +413,10 @@ static void sglr_execute_immediate_cmd(sglr_ImmediateModeCmd* im,
     }
   }else{
     sglr_set_uniform_mat4(shader, "cam_proj", cam_info.cam_projections[0]);
+    //sglr_set_uniform_float(shader, "cam_far", cam_info);
     
-    glDrawElements(im->graphics_pipeline.topology, idx_count, GL_UNSIGNED_INT, 0);
+    
+    glDrawElements(graphics_pipeline.topology, idx_count, GL_UNSIGNED_INT, 0);
     sglr_stats_add_triangle_count_indexed(idx_count, GL_TRIANGLES);
     sglr_stats_add_draw_call_count(1);
     
@@ -426,7 +442,9 @@ static void sglr_execute_immediate_cmd(sglr_ImmediateModeCmd* im,
   sglr_unset_shader();
   
  cleanup_im:
-  
-  sglr_free_buffer(vert_buffer);
-  sglr_free_buffer(idx_buffer);
+
+  if(im->submit_count == 0){
+    sglr_free_buffer(im->gpu_vert);
+    sglr_free_buffer(im->gpu_idx);
+  }
 }

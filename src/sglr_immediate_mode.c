@@ -1,12 +1,12 @@
 #include "sglr_immediate_mode.h"
-sglr_ImmediateModeCmd* sglr_immediate_begin(sglr_GraphicsPipeline pipeline){
+sglr_ImmediateModeCmd* sglr_immediate_begin(){//sglr_GraphicsPipeline pipeline){
   sglr_Context* context = sglr_current_context();
   n1_Allocator allocator = context->allocator;
 
   sglr_ImmediateModeCmd* cmd = allocator.alloc(sizeof(sglr_ImmediateModeCmd));
   N1_ZERO_MEMORY(cmd);
   
-  cmd->graphics_pipeline = pipeline;
+  //cmd->graphics_pipeline = pipeline;
   cmd->vert_max_count    = 256;
   cmd->vertices          = allocator.alloc(sizeof(sglr_IMVertex) * cmd->vert_max_count);
   cmd->idx_max_count     = 256;

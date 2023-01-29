@@ -326,6 +326,19 @@ void sglr_set_uniform_int(sglr_Shader shader, const char* name, uint32_t i){
   
   sglr_check_error();
 }
+void sglr_set_uniform_float(sglr_Shader shader, const char* name, float value){
+  int loc = glGetUniformLocation(shader.id, name);
+  sglr_check_error();
+
+  if(loc == -1){
+    return;
+  }
+
+  glUniform1f(loc,
+              value);
+  
+  sglr_check_error();
+}
 
 void sglr_set_uniform_mat4(sglr_Shader shader, const char* name, mat4 mat){
   int loc = glGetUniformLocation(shader.id, name);

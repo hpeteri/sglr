@@ -40,13 +40,13 @@ sglr_Shader sglr_make_shader_compute(const char* compute);
 sglr_Shader sglr_make_shader_builtin_flat();
 sglr_Shader sglr_make_shader_builtin_text();
 
-
 void        sglr_free_shader(sglr_Shader shader);
 void        sglr_set_shader(sglr_Shader shader);
 void        sglr_unset_shader();
 
 //uniform access
 void sglr_set_uniform_int(sglr_Shader shader, const char* name, uint32_t i);
+void sglr_set_uniform_float(sglr_Shader shader, const char* name, float value);
 void sglr_set_uniform_mat4(sglr_Shader shader, const char* name, mat4 mat);
 void sglr_set_uniform_vec4(sglr_Shader shader, const char* name, float x, float y, float z, float w);
 

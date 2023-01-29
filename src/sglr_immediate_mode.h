@@ -14,7 +14,7 @@ typedef struct sglr_IMVertex{
 
 typedef struct sglr_ImmediateModeCmd{
 
-  sglr_GraphicsPipeline graphics_pipeline;
+  //sglr_GraphicsPipeline graphics_pipeline;
   uint32_t vert_count;
   uint32_t vert_max_count;
       
@@ -26,10 +26,15 @@ typedef struct sglr_ImmediateModeCmd{
       
   sglr_IMVertex  current;
 
+
+  int         submit_count;
+  sglr_Buffer gpu_vert;
+  sglr_Buffer gpu_idx;
+
 } sglr_ImmediateModeCmd;
 
 
-sglr_ImmediateModeCmd* sglr_immediate_begin(sglr_GraphicsPipeline pipeline);
+sglr_ImmediateModeCmd* sglr_immediate_begin();//sglr_GraphicsPipeline pipeline);
 
 
 void sglr_immediate_vertex(sglr_ImmediateModeCmd* scb, vec3 pos);
