@@ -27,7 +27,7 @@ sglr_CommandBuffer* sglr_make_command_buffer();
 void                sglr_free_command_buffer(sglr_CommandBuffer* command_buffer);
 void                sglr_command_buffer_submit(sglr_CommandBuffer* command_buffer);
 void                sglr_command_buffer_set_render_target(sglr_CommandBuffer* command_buffer, sglr_RenderTarget render_target);
-void                sglr_command_buffer_set_state(sglr_CommandBuffer* command_buffer, sglr_State state);
+//void                sglr_command_buffer_set_state(sglr_CommandBuffer* command_buffer, sglr_State state);
 
 void sglr_command_buffer_execute(sglr_CommandBuffer* command_buffer);
 

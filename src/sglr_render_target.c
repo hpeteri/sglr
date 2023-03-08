@@ -236,6 +236,8 @@ sglr_RenderTarget sglr_make_main_render_target(int32_t width, int32_t height, in
   sglr_Context* context = sglr_current_context();
   context->main_render_target = sglr_make_render_target(width, height, samples, color_format, depth_format);
   sglr_set_render_target_debug_name(sglr_main_render_target(), "main_rt");
+  
+  sglr_check_error();
   return context->main_render_target;  
 }
 sglr_RenderTarget sglr_main_render_target(){
@@ -263,6 +265,7 @@ void sglr_blit_main_render_target(int32_t width, int32_t height, GLenum filter){
     
     sglr_check_error();
   }
+  sglr_check_error();
 }
 void sglr_resize_main_render_target(int32_t width, int32_t height){
   sglr_Context* context = sglr_current_context();
@@ -281,6 +284,8 @@ void sglr_resize_main_render_target(int32_t width, int32_t height){
     sglr_make_main_render_target(width, height, samples, color_format, depth_format);
     sglr_check_error();
   }
+  
+  sglr_check_error();
 }
 
 void sglr_free_render_target(sglr_RenderTarget target){
@@ -303,12 +308,14 @@ void sglr_free_render_target(sglr_RenderTarget target){
     glDeleteFramebuffers(1, &target.id);
     sglr_check_error();
   }
+  sglr_check_error();
 }
                                                                     
                                                                     
 void sglr_set_render_target(sglr_RenderTarget target){
   glBindFramebuffer(GL_FRAMEBUFFER, target.id);
   glViewport(0, 0, target.width, target.height);
+
   sglr_check_error();
 }
 
@@ -317,6 +324,7 @@ void sglr_set_render_target_debug_name(sglr_RenderTarget target, const char* nam
                 target.id,
                 strlen(name),
                 name);
+
   sglr_check_error();
 }
 
@@ -328,17 +336,19 @@ void sglr_set_clear_color_u32_rgba(uint32_t rgba){
   const float a = ((rgba >> 24) & 0xff) / 255.0f;
  
   glClearColor(r, g, b, a);
+  
   sglr_check_error();
 }
 
 void sglr_set_clear_color_4f_rgba(float r, float g, float b, float a){  
   glClearColor(r, g, b, a);
+
   sglr_check_error();
 }
 
 void sglr_set_clear_depth(float value){
-  
   glClearDepth(value);
+
   sglr_check_error();
 }
 

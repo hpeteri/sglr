@@ -8,7 +8,6 @@
 
 typedef struct sglr_CommandBuffer sglr_CommandBuffer;
 
-
 typedef struct sglr_Context{
   n1_Allocator allocator;
 

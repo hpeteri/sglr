@@ -152,8 +152,18 @@ void sglr_command_buffer2_submit(sglr_CommandBuffer2* scb, sglr_CommandBuffer* c
 }
 
 void sglr_command_buffer2_execute(sglr_CommandBuffer2* scb){
-  glDrawBuffer(GL_COLOR_ATTACHMENT0 + scb->draw_layer_idx);
-
+  { //set layer
+    GLint fbo_id = 0;
+    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &fbo_id);
+    sglr_check_error();
+   
+    if(fbo_id){
+      glDrawBuffer(GL_COLOR_ATTACHMENT0 + scb->draw_layer_idx);
+      sglr_check_error();
+    }
+    
+  }
+  
   sglr_Context* context = sglr_current_context();
   n1_Allocator allocator = context->allocator;
 
@@ -402,12 +412,13 @@ static void sglr_execute_immediate_cmd(sglr_ImmediateModeCmd* im,
       sglr_check_error();
           
       glDrawElements(graphics_pipeline.topology, idx_count, GL_UNSIGNED_INT, NULL);
+      sglr_check_error();
+      
       sglr_stats_add_triangle_count_indexed(idx_count, GL_TRIANGLES);
       sglr_stats_add_draw_call_count(1);
           
       sglr_free_buffer(cam_buf);
-
-          
+                
     }else{
       SGLR_ASSERT(0);
     }
@@ -420,6 +431,7 @@ static void sglr_execute_immediate_cmd(sglr_ImmediateModeCmd* im,
     sglr_stats_add_triangle_count_indexed(idx_count, GL_TRIANGLES);
     sglr_stats_add_draw_call_count(1);
     
+    sglr_check_error();
   }
       
   if(shader.pos_loc != -1){

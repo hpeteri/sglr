@@ -45,6 +45,7 @@ void sglr_set_graphics_pipeline(sglr_GraphicsPipeline pipeline){
     flags & SGLR_DEPTH_TEST ? glEnable(GL_DEPTH_TEST) : glDisable(GL_DEPTH_TEST);
     flags & SGLR_BLEND      ? glEnable(GL_BLEND)      : glDisable(GL_BLEND);
     flags & SGLR_CULL_FACE  ? glEnable(GL_CULL_FACE)  : glDisable(GL_CULL_FACE);
+    sglr_check_error();
   }
 
   const sglr_RendererStateFlags flags = pipeline.renderer_state.flags;
@@ -52,17 +53,20 @@ void sglr_set_graphics_pipeline(sglr_GraphicsPipeline pipeline){
   // === cull ===
   if(flags & SGLR_CULL_FACE){
     glCullFace(pipeline.cull_mode);
+    sglr_check_error();
   }
   
   // === blend ===
   if(flags & SGLR_BLEND){
     glBlendFunc(pipeline.blend_mode.sfactor, pipeline.blend_mode.dfactor);
+    sglr_check_error();
   }
   
   // === depth ===
   if(flags & SGLR_DEPTH_TEST){
     glDepthFunc(pipeline.depth_mode.func);
     glDepthMask(pipeline.depth_mode.mask);
+    sglr_check_error();
   }
   
   // === ===
