@@ -350,12 +350,21 @@ void sglr_clear_render_target_depth(){
 }
 
 void sglr_clear_render_target_color(){
-  glDrawBuffer(GL_COLOR_ATTACHMENT0);
-  glClear(GL_COLOR_BUFFER_BIT);
+  GLint fbo_id = 0;
+  glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &fbo_id);
+  
+  if(fbo_id){
 
-  glClearColor(inf32, inf32, inf32, inf32);
-  glDrawBuffer(GL_COLOR_ATTACHMENT1);
-  glClear(GL_COLOR_BUFFER_BIT);
+    glDrawBuffer(GL_COLOR_ATTACHMENT0);
+    glClear(GL_COLOR_BUFFER_BIT);
 
+    glClearColor(inf32, inf32, inf32, inf32);
+    glDrawBuffer(GL_COLOR_ATTACHMENT1);
+    glClear(GL_COLOR_BUFFER_BIT);
+  }else{
+
+    glClear(GL_COLOR_BUFFER_BIT);
+  }
+  
   sglr_check_error();
 }
