@@ -1,5 +1,7 @@
 #include "sglr_immediate_mode.h"
-sglr_ImmediateModeCmd* sglr_immediate_begin(){//sglr_GraphicsPipeline pipeline){
+#include "sglr_color.h"
+
+sglr_ImmediateModeCmd* sglr_immediate_begin(){
   sglr_Context* context = sglr_current_context();
   n1_Allocator allocator = context->allocator;
 

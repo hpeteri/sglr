@@ -7,7 +7,8 @@
 #include "sglr_compute_pipeline.h"
 #include "sglr_camera.h"
 
-#include "n1_cmath.h"
+#include "cmath/n1_cmath.h"
+
 // forward declare secondary
 typedef struct sglr_CommandBuffer2 sglr_CommandBuffer2;
 

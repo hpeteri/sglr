@@ -1,7 +1,7 @@
 #ifndef SGLR_CAMERA_H
 #define SGLR_CAMERA_H
 
-#include "n1_cmath.h"
+#include "cmath/n1_cmath.h"
 
 typedef struct sglr_FrustumPlane{
   vec3  normal;
