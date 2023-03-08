@@ -313,14 +313,14 @@ vec2 sglr_text_size(const char* text, float scale){
   return cursor_max;
 }
 
-vec2 sglr_text_size_n(const char* text, size_t len, float scale){
+vec2 sglr_text_size_n(const char* text, size_t text_len, float scale){
   vec2 cursor = vec2_zero();
   vec2 cursor_max = cursor;
   
   char* at = (char*)text;
   float size = 8.0f * scale;
   
-  while(*at && at < text + len){
+  while(*at && at < text + text_len){
     const char character = *(char*)at;
 
     if(character == '\n'){
